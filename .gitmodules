@@ -1,0 +1,3 @@
+[submodule "laradock-pokerhost"]
+	path = laradock-pokerhost
+	url = https://github.com/rihards-a/laradock-pokerhost.git
