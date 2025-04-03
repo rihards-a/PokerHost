@@ -22,4 +22,5 @@ git commit -m "Updated Laradock submodule"
 git push
 ```
 
-
+If hosting locally, in order for caddy to work, your OS needs to know the virtual host address and name:
+For windows you have to modify the C:\Windows\System32\drivers\etc\hosts file to include "127.0.0.1 laradock.test"
