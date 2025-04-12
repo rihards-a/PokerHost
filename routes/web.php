@@ -5,6 +5,14 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+// testing
+use App\Events\TestBoxEvent;
+Route::get("/spawn-box/{something}", function ($something) {
+    event(new TestBoxEvent("$something"));
+    return response()->json(['success' => true]);
+});
+// endtesting
+
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
