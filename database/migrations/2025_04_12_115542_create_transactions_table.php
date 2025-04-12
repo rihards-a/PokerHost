@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('hand_id')->constrained()->onDelete('cascade');
+            $table->foreignId('hand_player_id')->nullable()->constrained()->nullOnDelete();
+            $table->integer('amount');
+            $table->enum('type', ['bet', 'win', 'buyin', 'refund']);
             $table->timestamps();
         });
     }
