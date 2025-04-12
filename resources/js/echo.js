@@ -1,3 +1,4 @@
+/*
 import Echo from 'laravel-echo';
 
 import Pusher from 'pusher-js';
@@ -12,3 +13,4 @@ window.Echo = new Echo({
     forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
     enabledTransports: ['ws', 'wss'],
 });
+*/
