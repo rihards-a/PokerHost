@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 // testing
@@ -15,9 +16,16 @@ Route::get("/spawn-box/{something}", function ($something) {
 Route::get('/12box', function() {
     return Inertia::render('12boxes');
 });
-Route::get('/12box/update/{request}', function ($request) {
-    event(new TestBoxEvent("$request"));
-    return response()->json(['success' => true]);
+Route::post('/12box/update', function (Request $request) {
+    try {
+        $cardId = $request->input('card_id');
+        Log::info('Received card_id: ' . $cardId);
+        event(new TestBoxEvent($cardId));
+        return response()->json(['success' => true]);
+    } catch (\Exception $e) {
+        Log::error('Event dispatch failed: ' . $e->getMessage());
+        return response()->json(['error' => 'Event dispatch failed'], 500);
+    }
 });
 // endtesting
 

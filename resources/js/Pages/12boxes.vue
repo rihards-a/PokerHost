@@ -53,7 +53,7 @@
     },
     methods: {
       handleCardClick(cardId) {
-        axios.post('/api/box-press', { card_id: cardId })
+        axios.post('12box/update', { card_id: cardId })
           .then(() => console.log(`Card ${cardId} pressed.`))
           .catch(error => console.error('Error pressing card:', error));
       },
