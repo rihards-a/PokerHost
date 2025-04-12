@@ -14,11 +14,11 @@ class TestBoxEvent implements ShouldBroadcast
 {
   use Dispatchable, InteractsWithSockets, SerializesModels;
 
-  public $message;
+  public $card_id;
 
   public function __construct($message)
   {
-      $this->message = $message;
+      $this->card_id = $message;
   }
 
   public function broadcastOn()

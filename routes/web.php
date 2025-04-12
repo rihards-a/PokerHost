@@ -11,6 +11,14 @@ Route::get("/spawn-box/{something}", function ($something) {
     event(new TestBoxEvent("$something"));
     return response()->json(['success' => true]);
 });
+
+Route::get('/12box', function() {
+    return Inertia::render('12boxes');
+});
+Route::get('/12box/update/{request}', function ($request) {
+    event(new TestBoxEvent("$request"));
+    return response()->json(['success' => true]);
+});
 // endtesting
 
 
