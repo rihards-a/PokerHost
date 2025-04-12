@@ -13,6 +13,9 @@ Route::get("/spawn-box/{something}", function ($something) {
 });
 // endtesting
 
+
+
+// Prebuild routes:
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
