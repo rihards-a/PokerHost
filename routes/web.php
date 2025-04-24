@@ -32,7 +32,8 @@ Route::middleware(['auth'])->group(function () {
     // Table management
     Route::post('/tables', [TablesController::class, 'store'])->name('tables.store');
     Route::post('/tables/{table}/toggle-status', [TablesController::class, 'toggleStatus'])->name('tables.toggle-status');
-    
+    Route::delete('/tables/{table}', [TablesController::class, 'destroy'])->name('tables.destroy');
+   
     // Table view/join
     Route::get('/tables/{table}', [TablesController::class, 'show'])->name('tables.show');
     Route::post('/tables/{table}/join', [TablesController::class, 'join'])->name('tables.join');

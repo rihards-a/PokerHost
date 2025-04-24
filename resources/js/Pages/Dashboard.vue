@@ -69,8 +69,54 @@
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
                       </Link>
+                      <Link 
+                        :href="`/tables/${table.id}`" 
+                        method="delete" 
+                        as="button"
+                        class="text-red-600 hover:text-red-900"
+                        @click.prevent="confirmDelete(table)"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </Link>
                     </div>
                   </td>
+                  
+                  <!-- Add delete confirmation modal -->
+                  <div v-if="showDeleteModal" class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+                    <div class="flex items-center justify-center min-h-screen px-4">
+                      <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" @click="showDeleteModal = false"></div>
+                      
+                      <div class="bg-white rounded-lg max-w-md w-full mx-auto shadow-xl z-10 p-6">
+                        <div class="mb-4">
+                          <h3 class="text-lg font-medium text-gray-900">Delete Table</h3>
+                          <p class="mt-2 text-sm text-gray-500">
+                            Are you sure you want to delete "{{ tableToDelete?.name }}"? This action cannot be undone
+                            and all seats associated with this table will also be removed.
+                          </p>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3">
+                          <button
+                            type="button"
+                            @click="showDeleteModal = false"
+                            class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            @click="deleteTable"
+                            class="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700"
+                            :disabled="deleteForm.processing"
+                          >
+                            {{ deleteForm.processing ? 'Deleting...' : 'Delete' }}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </tr>
               </tbody>
             </table>
@@ -211,7 +257,9 @@
     
     data() {
       return {
-        showCreateTableModal: false
+        showCreateTableModal: false,
+        showDeleteModal: false,
+        tableToDelete: null
       };
     },
     
@@ -222,20 +270,45 @@
         'game-type': 'TexasHoldem'
       });
       
-      function createTable() {
-        tableForm.post('/tables', {
+      const deleteForm = useForm({});
+      
+      return {
+        tableForm,
+        deleteForm,
+        errors: tableForm.errors,
+      };
+    },
+    
+    methods: {
+      createTable() {
+        this.tableForm.post('/tables', {
           onSuccess: () => {
             this.showCreateTableModal = false;
           }
         });
-      }
+      },
       
-      return {
-        tableForm,
-        createTable,
-        errors: tableForm.errors,
-        processing: tableForm.processing
-      };
+      confirmDelete(table) {
+        this.tableToDelete = table;
+        this.showDeleteModal = true;
+      },
+      
+      deleteTable() {
+        this.deleteForm.delete(`/tables/${this.tableToDelete.id}`, {
+          preserveScroll: true,
+          onSuccess: () => {
+            this.showDeleteModal = false;
+            this.tableToDelete = null;
+          },
+          onError: (errors) => {
+            console.error('Delete failed:', errors);
+          },
+          onFinish: () => {
+            // Ensure the modal is closed even if there's an error
+            this.showDeleteModal = false;
+          }
+        });
+      }
     }
   }
   </script>

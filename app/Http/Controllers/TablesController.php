@@ -25,7 +25,7 @@ class TablesController extends Controller
                 'gameType' => $table['game-type'],
                 'maxSeats' => $table->max_seats,
                 'occupiedSeats' => $table->occupiedSeatsCount(),
-                'hostName' => $table->hostUser->name,
+                'hostName' => $table->host->name,
                 'created' => $table->created_at->diffForHumans(),
                 'isFull' => $table->isFull(),
             ];
@@ -48,7 +48,7 @@ class TablesController extends Controller
         ]);
         
         // Add the host user ID
-        $validated['host'] = Auth::id();
+        $validated['host_id'] = Auth::id();
         
         // Create the table
         $table = Table::create($validated);
@@ -62,6 +62,22 @@ class TablesController extends Controller
         }
         
         return redirect()->route('dashboard')->with('success', 'Table created successfully!');
+    }
+
+    /**
+     * Delete a table.
+     */
+    public function destroy(Table $table)
+    {
+        // Ensure the user is the host of this table
+        if (Auth::id() !== $table->host) {
+            return back()->with('error', 'You are not authorized to delete this table.');
+        }
+        
+        // Delete the table (seats will cascade delete due to foreign key constraint)
+        $table->delete();
+        
+        return Inertia::location(route('dashboard')); //->with('success', 'Table deleted successfully!');
     }
     
     /**
@@ -88,8 +104,8 @@ class TablesController extends Controller
         $userId = Auth::id();
         
         // Get tables where the user is the host
-        $myTables = Table::where('host', $userId)
-            ->with('hostUser', 'seats')
+        $myTables = Table::where('host_id', $userId)
+            ->with('host', 'seats')
             ->get()
             ->map(function ($table) {
                 return [
@@ -110,15 +126,15 @@ class TablesController extends Controller
             ->toArray();
         
         $joinedTables = Table::whereIn('id', $joinedTableIds)
-            ->where('host', '!=', $userId) // Exclude tables where user is host
-            ->with('hostUser')
+            ->where('host_id', '!=', $userId) // Exclude tables where user is host
+            ->with('host')
             ->get()
             ->map(function ($table) {
                 return [
                     'id' => $table->id,
                     'name' => $table->name,
                     'gameType' => $table['game-type'],
-                    'hostName' => $table->hostUser->name,
+                    'hostName' => $table->host->name,
                 ];
             });
         
