@@ -17,7 +17,7 @@ return new class extends Migration
             $table->tinyInteger('max_seats');
             $table->enum('game-type', ['TexasHoldem'])->default('TexasHoldem');
             $table->enum('status', ['open', 'closed'])->default('open');
-            $table->foreignId('host')->constrained('users');
+            $table->foreignId('host_id')->constrained('users');
             $table->timestamps();
         });
     }
