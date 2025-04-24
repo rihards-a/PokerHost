@@ -14,7 +14,7 @@ class Hand extends Model
 
     public function table()
     {
-        return $this->belongsTo(PokerTable::class);
+        return $this->belongsTo(Table::class);
     }
 
     public function dealerSeat()

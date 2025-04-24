@@ -27,9 +27,10 @@ class Seat extends Model
     {
         return $this->hasMany(Hand::class, 'dealer_seat_id'); // the Seat
     }
-}
+    
+    public function players()
+    {
+        return $this->hasMany(HandPlayer::class);
+    }
 
-$table->tinyInteger('position'); // 1-12 or maybe relative to the dealer
-$table->foreignId('table_id')->constrained()->onDelete('cascade');
-$table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade'); // if the associated user leaves there is no reason to track who sat where 
-$table->foreignId('dealer_seat_id')->nullable()->constrained('seats')->nullOnDelete();
+}
