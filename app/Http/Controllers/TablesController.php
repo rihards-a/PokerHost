@@ -70,14 +70,14 @@ class TablesController extends Controller
     public function destroy(Table $table)
     {
         // Ensure the user is the host of this table
-        if (Auth::id() !== $table->host) {
+        if (Auth::id() !== $table->host_id) {
             return back()->with('error', 'You are not authorized to delete this table.');
         }
         
         // Delete the table (seats will cascade delete due to foreign key constraint)
         $table->delete();
         
-        return Inertia::location(route('dashboard')); //->with('success', 'Table deleted successfully!');
+        return back()->with('success', 'Table deleted successfully!');
     }
     
     /**
@@ -86,7 +86,7 @@ class TablesController extends Controller
     public function toggleStatus(Table $table)
     {
         // Ensure the user is the host of this table
-        if (Auth::id() !== $table->host) {
+        if (Auth::id() !== $table->host_id) {
             return back()->with('error', 'You are not authorized to modify this table.');
         }
         
