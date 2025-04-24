@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('seats', function (Blueprint $table) {
             $table->id();
+            $table->boolean('is_dealer')->default(false);
             $table->tinyInteger('position'); // 1-12 or maybe relative to the dealer
             $table->foreignId('table_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade'); // if the associated user leaves there is no reason to track who sat where 
-            $table->foreignId('dealer_seat_id')->nullable()->constrained('seats')->nullOnDelete(); // possibly use this table for dealer tracking
+            // $table->foreignId('dealer_seat_id')->nullable()->constrained('seats')->nullOnDelete(); // possibly use this table for dealer tracking
             $table->timestamps();
         });
     }

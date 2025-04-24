@@ -17,10 +17,10 @@ class Hand extends Model
         return $this->belongsTo(Table::class);
     }
 
-    public function dealerSeat()
+    /*public function dealerSeat()
     {
         return $this->belongsTo(Seat::class, 'dealer_seat_id');
-    }
+    }*/
 
     public function players()
     {

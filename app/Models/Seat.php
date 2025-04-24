@@ -23,10 +23,10 @@ class Seat extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function handsAsDealer()
+    /*public function handsAsDealer()
     {
         return $this->hasMany(Hand::class, 'dealer_seat_id'); // the Seat
-    }
+    }*/
     
     public function players()
     {

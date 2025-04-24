@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->json('community_cards')->nullable(); // Example: ["Ah", "Kd", "Qs", "Jc", "9h"] - possibly change to numbers for faster parsing
             $table->foreignId('table_id')->constrained()->onDelete('cascade');
-            $table->foreignId('dealer_seat_id')->nullable()->constrained('seats')->nullOnDelete(); // dealer tracking
+            // $table->foreignId('dealer_seat_id')->nullable()->constrained('seats')->nullOnDelete(); // dealer tracking
             $table->timestamps();
         });
     }
