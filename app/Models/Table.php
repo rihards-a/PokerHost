@@ -14,15 +14,18 @@ class Table extends Model
         'host',
     ];
 
-    public function user(): BelongsTo {
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
 
-    public function seats(): HasMany {
+    public function seats()
+    {
         return $this->hasMany(Seat::class);
     }
 
-    public function hands(): HasMany {
+    public function hands()
+    {
         return $this->hasMany(Hand::class);
     }
 }
