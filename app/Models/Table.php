@@ -11,7 +11,7 @@ class Table extends Model
         'max_seats', 
         'status',
         'game_type',
-        'host',
+        'host_id',
     ];
 
     /**
@@ -20,7 +20,7 @@ class Table extends Model
     public static function getOpenTables()
     {
         return self::where('status', 'open')
-            ->with(['hostUser', 'seats'])
+            ->with(['host', 'seats'])
             ->get();
     }
 
@@ -40,7 +40,7 @@ class Table extends Model
         return $this->occupiedSeatsCount() >= $this->max_seats;
     }
 
-    public function hostUser()
+    public function host()
     {
         return $this->belongsTo(User::class);
     }
