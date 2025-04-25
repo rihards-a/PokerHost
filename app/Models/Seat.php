@@ -18,7 +18,7 @@ class Seat extends Model
         return $this->belongsTo(Table::class);
     }
 
-    public function player()
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
