@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TablesController;
+use App\Http\Controllers\SeatsController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -38,6 +39,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/tables/{table}', [TablesController::class, 'show'])->name('tables.show');
     Route::post('/tables/{table}/join', [TablesController::class, 'join'])->name('tables.join');
     Route::post('/tables/{table}/leave', [TablesController::class, 'leave'])->name('tables.leave');
+
+    // Seat management
+    Route::post('/seats/{seat}/join', [SeatsController::class, 'join'])->name('seats.join');
+    Route::post('/seats/{seat}/leave', [SeatsController::class, 'leave'])->name('seats.leave');
 });
 
 // Prebuild routes:
