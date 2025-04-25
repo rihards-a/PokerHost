@@ -105,15 +105,19 @@ class TablesController extends Controller
         ];
         
         // Get all seats with their users (if occupied)
-        $seats = $table->seats()->with('user')->orderBy('position')->get()->map(function ($seat) {
+        $seats = $table->seats->sortBy('position')->map(function ($seat) {
+            $isUser = !!$seat->user_id;
+            $isGuest = !!$seat->guest_session;
+    
             return [
                 'id' => $seat->id,
                 'position' => $seat->position,
-                'isOccupied' => !!$seat->user_id,
+                'isOccupied' => $isUser || $isGuest,
                 'userId' => $seat->user_id,
-                'userName' => $seat->user ? $seat->user->name : null,
+                'userName' => $isUser ? optional($seat->user)->name : $seat->guest_name,
+                'userType' => $isUser ? 'user' : ($isGuest ? 'guest' : null),
             ];
-        });
+        })->values();
         
         // Check if the current user already has a seat at this table
         $currentUserSeat = null;
@@ -124,6 +128,17 @@ class TablesController extends Controller
                     'id' => $userSeat->id,
                     'position' => $userSeat->position
                 ];
+            }
+        } else {
+            $guestSession = session()->getID();
+            if ($guestSession) {
+                $guestSeat = $table->seats()->where('guest_session', $guestSession)->first();
+                if ($guestSeat) {
+                    $currentUserSeat = [
+                        'id' => $guestSeat->id,
+                        'position' => $guestSeat->position,
+                    ];
+                }
             }
         }
         

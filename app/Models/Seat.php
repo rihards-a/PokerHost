@@ -8,7 +8,10 @@ class Seat extends Model
 {
     protected $fillable = [
         'table_id',
-        'player_id',
+        'user_id',
+        'guest_id',
+        'guert_name',
+        'guest_session',
         'dealer_seat_id',
         'position',
     ];

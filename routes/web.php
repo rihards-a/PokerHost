@@ -34,16 +34,16 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/tables', [TablesController::class, 'store'])->name('tables.store');
     Route::post('/tables/{table}/toggle-status', [TablesController::class, 'toggleStatus'])->name('tables.toggle-status');
     Route::delete('/tables/{table}', [TablesController::class, 'destroy'])->name('tables.destroy');
-   
-    // Table view/join
-    Route::get('/tables/{table}', [TablesController::class, 'show'])->name('tables.show');
-    Route::post('/tables/{table}/join', [TablesController::class, 'join'])->name('tables.join');
-    Route::post('/tables/{table}/leave', [TablesController::class, 'leave'])->name('tables.leave');
-
-    // Seat management
-    Route::post('/seats/{seat}/join', [SeatsController::class, 'join'])->name('seats.join');
-    Route::post('/seats/{seat}/leave', [SeatsController::class, 'leave'])->name('seats.leave');
 });
+
+// Table view/join
+Route::get('/tables/{table}', [TablesController::class, 'show'])->name('tables.show');
+Route::post('/tables/{table}/join', [TablesController::class, 'join'])->name('tables.join');
+Route::post('/tables/{table}/leave', [TablesController::class, 'leave'])->name('tables.leave');
+
+// Seat management
+Route::post('/seats/{seat}/join', [SeatsController::class, 'join'])->name('seats.join');
+Route::post('/seats/{seat}/leave', [SeatsController::class, 'leave'])->name('seats.leave');
 
 // Prebuild routes:
 /*Route::get('/', function () {
