@@ -10,10 +10,11 @@ class Seat extends Model
         'table_id',
         'user_id',
         'guest_id',
-        'guert_name',
+        'guest_name',
         'guest_session',
         'dealer_seat_id',
         'position',
+        'balance',
     ];
 
     public function table()
