@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Seat;
+use App\Models\Player;
 use App\Events\TableSeatUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,16 +25,23 @@ class SeatsController extends Controller
         if ($seat->table->status !== 'open') {
             return back()->with('error', 'This table is closed and not accepting new players.');
         }
+
+        $player = Player::create([
+            // any defaults? maybe the default table buy in amount or status? default is active already
+        ]);
+        $seat->player()->associate($player);
+        $seat->save();
         
         $isAuth = Auth::check();
         $guestSessionId = $request->session()->getId();
 
         // Set user info
+        $userId = null;
         if ($isAuth) {$userId = Auth::id();}
 
         // Check for existing seat
         $existingSeat = Seat::where('table_id', $seat->table_id)
-        ->where(fn($q) => $isAuth
+        ->whereHas('player', fn($q) => $isAuth
             ? $q->where('user_id', $userId)
             : $q->where('guest_session', $guestSessionId)
         )->exists();
@@ -52,7 +60,6 @@ class SeatsController extends Controller
             $request->session()->put('guest_name', $userName);
         }
         
-        $player = $seat->player;
         DB::transaction(function () use ($player, $isAuth, $guestSessionId, $userName, $seat, $userId) {
             $player->update([
                 'user_id'       => $isAuth ? $userId : null,
