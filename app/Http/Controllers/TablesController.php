@@ -7,6 +7,7 @@ use App\Models\Seat;
 use App\Events\TableStatusUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class TablesController extends Controller
@@ -61,10 +62,12 @@ class TablesController extends Controller
             });
         
         // Get tables where the user is a participant (has a seat)
-        $joinedTableIds = Seat::where('user_id', $userId)
-            ->pluck('table_id')
-            ->unique()
-            ->toArray();
+        $joinedTableIds =  Seat::whereHas('player', function($q) use ($userId) {
+            $q->where('user_id', $userId);
+        })
+        ->pluck('table_id')
+        ->unique()
+        ->toArray();
         
         $joinedTables = Table::whereIn('id', $joinedTableIds)
             ->where('host_id', '!=', $userId) // Exclude tables where user is host
@@ -104,17 +107,21 @@ class TablesController extends Controller
             'created' => $table->created_at->diffForHumans(),
         ];
         
-        // Get all seats with their users (if occupied)
+        // Get all seats with their players (if occupied)
         $seats = $table->seats->sortBy('position')->map(function ($seat) {
-            $isUser = !!$seat->user_id;
-            $isGuest = !!$seat->guest_session;
+            if ($seat->player) {
+                $isUser = !!$seat->player->user_id;
+                $isGuest = !!$seat->player->guest_session;
+            } else {
+                $isUser = false;
+                $isGuest = false;
+            }
     
             return [
                 'id' => $seat->id,
                 'position' => $seat->position,
-                'isOccupied' => $isUser || $isGuest,
-                'userId' => $seat->user_id,
-                'userName' => $isUser ? optional($seat->user)->name : $seat->guest_name,
+                'isOccupied' => !!$seat->player,
+                'userName' => $isUser ? optional($seat->player->user)->name : optional($seat->player)->guest_name,
                 'userType' => $isUser ? 'user' : ($isGuest ? 'guest' : null),
             ];
         })->values();
@@ -122,7 +129,9 @@ class TablesController extends Controller
         // Check if the current user already has a seat at this table
         $currentUserSeat = null;
         if (Auth::check()) {
-            $userSeat = $table->seats()->where('user_id', Auth::id())->first();
+            $userSeat = $table->seats()
+                ->whereHas('player', function($q) 
+                {$q->where('user_id', Auth::id());})->first();
             if ($userSeat) {
                 $currentUserSeat = [
                     'id' => $userSeat->id,
@@ -132,7 +141,9 @@ class TablesController extends Controller
         } else {
             $guestSession = session()->getID();
             if ($guestSession) {
-                $guestSeat = $table->seats()->where('guest_session', $guestSession)->first();
+                $guestSeat = $table->seats()
+                    ->whereHas('player', function($q) use ($guestSession) // PHP closures don't see outer scope by default
+                    {$q->where('guest_session', $guestSession);})->first();
                 if ($guestSeat) {
                     $currentUserSeat = [
                         'id' => $guestSeat->id,
@@ -160,11 +171,12 @@ class TablesController extends Controller
             return back()->with('error', 'You are not authorized to modify this table.');
         }
         
-        $table->status = $table->status === 'open' ? 'closed' : 'open';
-        $table->save();
+        DB::transaction(function () use ($table) {
+            $table->status = $table->status === 'open' ? 'closed' : 'open';
+            $table->save();
         
-        // Broadcast the table status change
-        broadcast(new TableStatusUpdated($table->id, $table->status));
+            broadcast(new TableStatusUpdated($table->id, $table->status));
+        });
 
         return back()->with('success', 'Table status updated successfully!');
     }

@@ -29,10 +29,10 @@ class TableSeatUpdated implements ShouldBroadcast
         $this->seat = [
             'id' => $seat->id,
             'position' => $seat->position,
-            'isOccupied' => !!($seat->user_id || $seat->guest_session),
-            'userId' => $seat->user_id,
-            'userName' => $seat->user ? $seat->user->name : $seat->guest_name,
-            'isGuest' => !$seat->user_id && !!$seat->guest_session,
+            'isOccupied' => !!($seat->isTaken()),
+            'userId' => $seat->player->user_id,
+            'userName' => $seat->player->user ? $seat->player->user->name : $seat->player->guest_name,
+            'isGuest' => !$seat->player->user_id && !!$seat->player->guest_session,
         ];
     }
 
