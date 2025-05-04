@@ -14,8 +14,11 @@ class Seat extends Model
     ];
 
     public function isTaken()
-    {
-        return $this->player->user_id || $this->player->guest_session;
+    {   
+        if ($this->player) {
+            return $this->player->user_id || $this->player->guest_session;
+        }
+        return false;
     }
 
     public function table()
