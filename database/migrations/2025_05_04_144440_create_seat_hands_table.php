@@ -11,11 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('hand_players', function (Blueprint $table) {
+        Schema::create('seat_hands', function (Blueprint $table) {
             $table->id();
-            $table->enum('status', ['active', 'folded', 'busted'])->default('active');
+            $table->string('card1', 5)->nullable(); // maybe use different formatting
+            $table->string('card2', 5)->nullable();
+            $table->foreignId('seat_id')->constrained()->onDelete('cascade');
             $table->foreignId('hand_id')->constrained()->onDelete('cascade');
-            $table->foreignId('seat_id')->constrained('seats')->onDelete('cascade'); // the user gets associated via the seats table
             $table->timestamps();
         });
     }
@@ -25,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('hand_players');
+        Schema::dropIfExists('seat_hands');
     }
 };

@@ -13,14 +13,10 @@ return new class extends Migration
     {
         Schema::create('seats', function (Blueprint $table) {
             $table->id();
-            $table->integer('balance')->default(0); // balance for the player
             $table->tinyInteger('position'); // 1-12 or maybe relative to the dealer
-            $table->boolean('is_dealer')->default(false);
-            $table->string('guest_name')->nullable(); // for unauthenticated users
-            $table->string('guest_session')->nullable();
-            $table->foreignId('user_id')->nullable()->constrained(); // for authenticated users
+            $table->boolean('is_dealer')->default(false); // tracking the dealer
+            $table->foreignId('player_id')->nullable()->constrained();
             $table->foreignId('table_id')->constrained()->onDelete('cascade');
-            // $table->foreignId('dealer_seat_id')->nullable()->constrained('seats')->nullOnDelete(); // possibly use this table for dealer tracking
             $table->timestamps();
         });
     }

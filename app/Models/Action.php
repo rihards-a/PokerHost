@@ -8,7 +8,7 @@ class Action extends Model
 {
     protected $fillable = [
         'round_id',
-        'hand_player_id',
+        'seat_id',
         'action_type',
         'amount',
     ];
@@ -18,8 +18,8 @@ class Action extends Model
         return $this->belongsTo(Round::class);
     }
 
-    public function handPlayer()
+    public function seat()
     {
-        return $this->belongsTo(HandPlayer::class);
+        return $this->belongsTo(Seat::class);
     }
 }

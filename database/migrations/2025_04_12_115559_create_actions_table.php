@@ -16,7 +16,7 @@ return new class extends Migration
             $table->enum('action_type', ['fold', 'check', 'call', 'raise', 'bet', 'allin']);
             $table->integer('amount')->nullable();
             $table->foreignId('round_id')->constrained()->onDelete('cascade');
-            $table->foreignId('hand_player_id')->constrained()->onDelete('cascade');
+            $table->foreignId('seat_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }

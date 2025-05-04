@@ -8,7 +8,6 @@ class Hand extends Model
 {
     protected $fillable = [
         'table_id',
-        'dealer_seat_id',
         'community_cards',
     ];
 
@@ -17,14 +16,9 @@ class Hand extends Model
         return $this->belongsTo(Table::class);
     }
 
-    /*public function dealerSeat()
+    public function seatHand()
     {
-        return $this->belongsTo(Seat::class, 'dealer_seat_id');
-    }*/
-
-    public function players()
-    {
-        return $this->hasMany(HandPlayer::class);
+        return $this->hasMany(SeatHand::class);
     }
 
     public function rounds()

@@ -8,13 +8,9 @@ class Seat extends Model
 {
     protected $fillable = [
         'table_id',
-        'user_id',
-        'guest_id',
-        'guest_name',
-        'guest_session',
-        'dealer_seat_id',
+        'player_id',
         'position',
-        'balance',
+        'is_dealer',
     ];
 
     public function table()
@@ -22,19 +18,18 @@ class Seat extends Model
         return $this->belongsTo(Table::class);
     }
 
-    public function user()
+    public function player()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Player::class);
     }
 
-    /*public function handsAsDealer()
+    public function seatHand()
     {
-        return $this->hasMany(Hand::class, 'dealer_seat_id'); // the Seat
-    }*/
-    
-    public function players()
-    {
-        return $this->hasMany(HandPlayer::class);
+        return $this->hasMany(SeatHand::class);
     }
 
+    public function action()
+    {
+        return $this->hasMany(Action::class);
+    }
 }
