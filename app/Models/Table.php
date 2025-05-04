@@ -29,7 +29,11 @@ class Table extends Model
      */
     public function occupiedSeatsCount()
     {
-        return $this->seats()->whereNotNull('user_id')->count();
+        return $this->seats()
+        ->whereHas('player', function($q) {
+            $q->whereNotNull('user_id')
+              ->orWhereNotNull('guest_session');
+        })->count();
     }
 
     /**

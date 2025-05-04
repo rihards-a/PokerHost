@@ -13,6 +13,11 @@ class Seat extends Model
         'is_dealer',
     ];
 
+    public function isTaken()
+    {
+        return $this->player->user_id || $this->player->guest_session;
+    }
+
     public function table()
     {
         return $this->belongsTo(Table::class);
