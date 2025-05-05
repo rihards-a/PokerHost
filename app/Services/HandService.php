@@ -18,6 +18,12 @@ class HandService extends ServiceProvider
     * @return Hand
     */
     public function initializeHand(Table $table, Collection $occupiedSeats) {
+        /* TODO
+        // Create deck and shuffle
+        $deck = $this->createShuffledDeck();
+        */
+
+        // Deal cards to the table. Determine dealer, small blind, and big blind
         $hand = new Hand();
         $hand->table_id = $table->id;
         $hand->community_cards = ["Ah", "Kd", "Qs", "Jc", "9h"]; #TODO create a deck and shuffle
@@ -26,11 +32,7 @@ class HandService extends ServiceProvider
         $hand->big_blind_id = $occupiedSeats->find($hand->small_blind_id)->nextActive->id; #TODO edge case if only 2 players
         $hand->save();
 
-        /* TODO
-        // Create deck and shuffle
-        $deck = $this->createShuffledDeck();
-        */
-
+        // Deal cards to each player
         foreach ($occupiedSeats as $seat) {
             $seatHand = new SeatHand();
             $seatHand->hand_id = $hand->id;
