@@ -10,7 +10,6 @@ class Seat extends Model
         'table_id',
         'player_id',
         'position',
-        'is_dealer',
     ];
 
     public function isTaken()

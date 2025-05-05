@@ -14,6 +14,9 @@ return new class extends Migration
         Schema::create('hands', function (Blueprint $table) {
             $table->id();
             $table->json('community_cards')->nullable(); // Example: ["Ah", "Kd", "Qs", "Jc", "9h"] - possibly change to numbers for faster parsing
+            $table->foreignId('dealer_id')->nullable()->constrained('seats')->onDelete('set null');
+            $table->foreignId('small_blind_id')->nullable()->constrained('seats')->onDelete('set null');
+            $table->foreignId('big_blind_id')->nullable()->constrained('seats')->onDelete('set null');
             $table->foreignId('table_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });

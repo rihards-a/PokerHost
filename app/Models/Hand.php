@@ -8,6 +8,9 @@ class Hand extends Model
 {
     protected $fillable = [
         'table_id',
+        'dealer_id',
+        'small_blind_id',
+        'big_blind_id',
         'community_cards',
     ];
 

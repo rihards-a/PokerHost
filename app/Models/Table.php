@@ -23,25 +23,25 @@ class Table extends Model
             ->with(['host', 'seats'])
             ->get();
     }
-
-    /**
-     * Count the number of occupied seats
-     */
-    public function occupiedSeatsCount()
-    {
-        return $this->seats()
-        ->whereHas('player', function($q) {
-            $q->whereNotNull('user_id')
-              ->orWhereNotNull('guest_session');
-        })->count();
-    }
-
+    
     /**
      * Check if table is full
      */
     public function isFull()
     {
         return $this->occupiedSeatsCount() >= $this->max_seats;
+    }
+
+    /**
+     * Count the number of occupied seats
+     */
+    public function occupiedSeats()
+    {
+        return $this->seats()
+        ->whereHas('player', function($q) {
+            $q->whereNotNull('user_id')
+              ->orWhereNotNull('guest_session');
+        });
     }
 
     public function host()
