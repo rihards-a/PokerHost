@@ -8,22 +8,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-// testing
-use App\Events\TestBoxEvent;
-Route::get('/12box', function() {
-    return Inertia::render('12boxes');
-});
-Route::post('/12box/update', function (Request $request) {
-    try {
-        $cardId = $request->input('card_id');
-        event(new TestBoxEvent($cardId));
-        return response()->json(['success' => true]);
-    } catch (\Exception $e) {
-        return response()->json(['error' => 'Event dispatch failed'], 500);
-    }
-});
-// endtesting
-
 Route::get('/', [TablesController::class, 'index'])->name('home');
 
 Route::middleware(['auth'])->group(function () {
@@ -44,21 +28,6 @@ Route::post('/tables/{table}/leave', [TablesController::class, 'leave'])->name('
 // Seat management
 Route::post('/seats/{seat}/join', [SeatsController::class, 'join'])->name('seats.join');
 Route::post('/seats/{seat}/leave', [SeatsController::class, 'leave'])->name('seats.leave');
-
-// Prebuild routes:
-/*Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
-
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-*/
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
