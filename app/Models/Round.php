@@ -10,7 +10,6 @@ class Round extends Model
         'hand_id',
         'type',
         'is_complete',
-        'starting_player_position',
         'pot_size',
     ];
 

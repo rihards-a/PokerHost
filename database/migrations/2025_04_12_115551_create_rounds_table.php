@@ -16,7 +16,6 @@ return new class extends Migration
             $table->enum('type', ['preflop', 'flop', 'turn', 'river']);
             $table->unsignedInteger('pot_size');
             $table->boolean('is_complete');
-            $table->tinyInteger('starting_player_position'); // from where the round starts
             $table->foreignId('hand_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
