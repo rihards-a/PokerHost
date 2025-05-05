@@ -26,7 +26,7 @@ class TablesController extends Controller
                 'name' => $table->name,
                 'gameType' => $table['game-type'],
                 'maxSeats' => $table->max_seats,
-                'occupiedSeats' => $table->occupiedSeatsCount(),
+                'occupiedSeats' => $table->occupiedSeats->count(),
                 'hostName' => $table->host->name,
                 'created' => $table->created_at->diffForHumans(),
                 'isFull' => $table->isFull(),
@@ -55,7 +55,7 @@ class TablesController extends Controller
                     'name' => $table->name,
                     'gameType' => $table['game-type'],
                     'maxSeats' => $table->max_seats,
-                    'occupiedSeats' => $table->occupiedSeatsCount(),
+                    'occupiedSeats' => $table->occupiedSeats->count(),
                     'status' => $table->status,
                     'created' => $table->created_at->diffForHumans(),
                 ];

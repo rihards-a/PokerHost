@@ -29,7 +29,7 @@ class Table extends Model
      */
     public function isFull()
     {
-        return $this->occupiedSeatsCount() >= $this->max_seats;
+        return $this->occupiedSeats->count() >= $this->max_seats;
     }
 
     /**
