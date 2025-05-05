@@ -20,6 +20,25 @@ class Seat extends Model
         return false;
     }
 
+    public function nextActive() {
+        $nextSeat = Seat::where('table_id', $this->table_id)
+            ->where('position', '>', $this->position)
+            ->whereHas('player', function($query) {
+                $query->where('status', 'active');
+            })
+            ->first();
+        // Edge case: it's the last seat in the table
+        if (!$nextSeat) {
+            $nextSeat = Seat::where('table_id', $this->table_id)
+                ->where('position', '<=', $this->position)
+                ->whereHas('player', function($query) {
+                    $query->where('status', 'active');
+                })
+                ->first();
+        }
+        return $nextSeat;
+    }
+
     public function table()
     {
         return $this->belongsTo(Table::class);
