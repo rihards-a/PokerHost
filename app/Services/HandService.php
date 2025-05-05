@@ -21,10 +21,15 @@ class HandService extends ServiceProvider
         $hand = new Hand();
         $hand->table_id = $table->id;
         $hand->community_cards = ["Ah", "Kd", "Qs", "Jc", "9h"]; #TODO create a deck and shuffle
-        $hand->dealer_id = $occupiedSeats->first()->id; // #TODO maybe use a dealer offset and then skip 'offset % count'
-        $hand->small_blind_id = $occupiedSeats->skip(1)->first()->id;
-        $hand->big_blind_id = $occupiedSeats->skip(2)->first()->id;
+        $hand->dealer_id = $occupiedSeats->first()->id; #TODO maybe use a dealer offset and then skip 'offset % count'
+        $hand->small_blind_id = $occupiedSeats->find($hand->dealer_id)->nextActive->id;
+        $hand->big_blind_id = $occupiedSeats->find($hand->small_blind_id)->nextActive->id; #TODO edge case if only 2 players
         $hand->save();
+
+        /* TODO
+        // Create deck and shuffle
+        $deck = $this->createShuffledDeck();
+        */
 
         foreach ($occupiedSeats as $seat) {
             $seatHand = new SeatHand();
