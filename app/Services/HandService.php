@@ -26,7 +26,7 @@ class HandService extends ServiceProvider
         // Deal cards to the table. Determine dealer, small blind, and big blind
         $hand = new Hand();
         $hand->table_id = $table->id;
-        $hand->community_cards = ["Ah", "Kd", "Qs", "Jc", "9h"]; #TODO create a deck and shuffle
+        $hand->community_cards = ["Ah", "Kd", "Qs", "Jc", "9h"]; #TODO create a deck and shuffle - make sure users cannot see this or deal it incrementally
         $hand->dealer_id = $occupiedSeats->first()->id; #TODO maybe use a dealer offset and then skip 'offset % count'
         $hand->small_blind_id = $occupiedSeats->find($hand->dealer_id)->nextActive->id;
         $hand->big_blind_id = $occupiedSeats->find($hand->small_blind_id)->nextActive->id; #TODO edge case if only 2 players
