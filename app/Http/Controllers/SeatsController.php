@@ -67,10 +67,11 @@ class SeatsController extends Controller
                 'guest_session' => $isAuth ? null : $guestSessionId,
             ]);
     
+            DB::afterCommit(function () use ($seat) {
             // Reload any relations you need to include in the broadcast
             $seat->load('player.user');
-    
             broadcast(new TableSeatUpdated($seat->table_id, $seat));
+            });
         });
         
         return back()->with('success', 'You have successfully joined the table!');
@@ -107,6 +108,7 @@ class SeatsController extends Controller
             ]);
             DB::afterCommit(function () use ($seat) {
                 // Broadcast the seat update to all listeners
+                $seat->load('player.user');
                 broadcast(new TableSeatUpdated($seat->table_id, $seat));
             });
         });
