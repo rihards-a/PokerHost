@@ -45,8 +45,9 @@ class HandService
         return $hand;
     }
 
-    public function finishHand(Hand $hand) 
+    public function finalizeHand(Hand $hand) 
     {
-
+        // TODO maybe calculate winners, maybe this is unnecessary in this service
+        // maybe deal out all the cards and then calculate winners if all-in situation, maybe in different service...
     }
 }
