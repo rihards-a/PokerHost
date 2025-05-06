@@ -2,10 +2,8 @@
 
 namespace App\Services;
 
-use Illuminate\Support\ServiceProvider;
-
 #TODO: currently not in use!!!
-class DeckService extends ServiceProvider
+class DeckService
 {
     /**
      * Create a shuffled deck of cards

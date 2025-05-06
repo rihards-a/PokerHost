@@ -2,13 +2,12 @@
 
 namespace App\Services;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Collection;
 use App\Models\Hand;
 use App\Models\SeatHand;
 use App\Models\Table;
 
-class HandService extends ServiceProvider
+class HandService
 {
     /*
     * Initialize a new hand for the table.
@@ -17,7 +16,8 @@ class HandService extends ServiceProvider
     * @param Collection $occupiedSeats
     * @return Hand
     */
-    public function initializeHand(Table $table, Collection $occupiedSeats) {
+    public function initializeHand(Table $table, Collection $occupiedSeats) 
+    {
         /* TODO
         // Create deck and shuffle
         $deck = $this->createShuffledDeck();
@@ -43,5 +43,10 @@ class HandService extends ServiceProvider
         }
 
         return $hand;
+    }
+
+    public function finishHand(Hand $hand) 
+    {
+
     }
 }
