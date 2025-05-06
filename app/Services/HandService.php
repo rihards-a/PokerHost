@@ -9,12 +9,13 @@ use App\Models\Table;
 
 class HandService
 {
-    protected $deckService, $positionService;
+    protected $deckService, $positionService, $transactionService;
 
-    public function __construct(DeckService $deckService, PositionService $positionService)
+    public function __construct(DeckService $deckService, PositionService $positionService, TransactionService $transactionService)
     {
         $this->deckService = $deckService;
         $this->positionService = $positionService;
+        $this->transactionService = $transactionService;
     }
 
     /*
@@ -55,12 +56,37 @@ class HandService
         return $hand;
     }
 
+    // Finalize the hand, determine winners and execute all the winning transactions.
     public function finalizeHand(Hand $hand) 
     {
-        // TODO maybe calculate winners, maybe this is unnecessary in this service
-        // maybe deal out all the cards and then calculate winners if all-in situation, maybe in different service...
+        if (!$hand->is_complete) {
+            throw new \Exception('Hand is not complete.'); // Hand gets completed by the round service! 
+        }
+        // TODO deal out all the cards - configure the round service to do this one by one - or rather call its methods one by one since no players are 'active' yet not 'folded'
         $winners = [];
-        $seatHands = $hand->seatHands()->where('folded', false)->get();
+        $seatHands = $hand->seatHands()->whereNot('status', 'folded')->with('seat')->get();
+
+        $dealerSeat = $hand->table->seats()->find($hand->dealer_id);
+        $totalSeats = $hand->table->seats()->count(); // Needed for wraparound
+
+        foreach ($seatHands as $seatHand) {
+            $handRank = $this->deckService->evaluateHand($seatHand->cards, $hand->community_cards);
+            $winners[] = [
+                'seat_id' => $seatHand->seat_id,
+                'hand_rank' => $handRank,
+                'distance_from_dealer' => ($seatHand->seat->position - $dealerSeat->position + $totalSeats) % $totalSeats,
+            ];
+        }
+
+        $winners = collect($winners)->sortByDesc('hand_rank')->values()->all();
+
+        // Distribute the pot to the winners
+        $best_hand = $winners[0]['hand_rank'];
+        $winners = array_filter($winners, function ($winner) use ($best_hand) {
+            return $winner['hand_rank'] === $best_hand;
+        });
+        $winners = collect($winners)->sortBy('distance_from_dealer')->values()->all();
+        $this->transactionService->distributePot($hand->pot_size, $winners);
 
         return $winners;
     }
