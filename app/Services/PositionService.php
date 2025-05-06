@@ -11,9 +11,7 @@ class PositionService extends ServiceProvider
      */
     public function getCurrentSeat($hand)
     {
-        $activeSeatHands = $hand->seatHands()->whereHas('seat.player', function ($query) {
-            $query->where('status', 'active');
-        })->with('seat')->get();
+        $activeSeatHands = $hand->seatHands()->where('status', 'active')->with('seat')->get();
 
         $lastAction = $this->getLastAction($hand);
         $lastSeat = $lastAction ? $lastAction->seat_id : $hand->big_blind_id; #TODO Won't work for 2 players
