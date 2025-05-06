@@ -43,6 +43,29 @@ class Seat extends Model
         return $nextSeat;
     }
 
+    /**
+     * Get the previous active seat in the table
+     * @return Seat|null
+     */
+    public function previousActive() {
+        $previousSeat = Seat::where('table_id', $this->table_id)
+            ->where('position', '<', $this->position)
+            ->whereHas('player', function($query) {
+                $query->where('status', 'active');
+            })
+            ->first();
+        // Edge case: it's the first seat in the table
+        if (!$previousSeat) {
+            $previousSeat = Seat::where('table_id', $this->table_id)
+                ->where('position', '>=', $this->position)
+                ->whereHas('player', function($query) {
+                    $query->where('status', 'active');
+                })
+                ->first();
+        }
+        return $previousSeat;
+    }
+
     public function table()
     {
         return $this->belongsTo(Table::class);
