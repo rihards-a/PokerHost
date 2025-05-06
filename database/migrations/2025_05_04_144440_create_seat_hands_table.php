@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('seat_hands', function (Blueprint $table) {
             $table->id();
+            $table->enum('status', ['active', 'folded', 'allin', 'busted', 'won'])->default('active');
             $table->string('card1', 5)->nullable(); // maybe use different formatting
             $table->string('card2', 5)->nullable();
             $table->foreignId('seat_id')->constrained()->onDelete('cascade');

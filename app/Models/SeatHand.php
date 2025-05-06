@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class SeatHand extends Model
 {
     protected $fillable = [
+        'status',
         'hand_id',
         'seat_id',
         'card1',

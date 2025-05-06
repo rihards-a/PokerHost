@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('players', function (Blueprint $table) {
             $table->id();
-            $table->enum('status', ['active', 'folded', 'busted', 'away', 'allin'])->default('active');
+            // $table->enum('status', ['active', 'folded', 'busted', 'away', 'allin'])->default('active'); # moving this to SeatHand, since it is specific to the hand and player status changes separately
+            $table->boolean('active')->default(true);
             $table->integer('balance')->default(0);
             $table->string('guest_name')->nullable(); // for unauthenticated users
             $table->string('guest_session')->nullable();

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Player extends Model
 {
     protected $fillable = [
-        'status',
+        'active',
         'balance',
         'guest_name',
         'guest_session',
