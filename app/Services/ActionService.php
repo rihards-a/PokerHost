@@ -8,12 +8,13 @@ use App\Models\Action;
 
 class ActionService extends ServiceProvider
 {
-    protected $positionService, $transactionService;
+    protected $positionService, $transactionService, $roundService;
 
-    public function __construct(PositionService $positionService, TransactionService $transactionService)
+    public function __construct(PositionService $positionService, TransactionService $transactionService, RoundService $roundService)
     {
         $this->positionService = $positionService;
         $this->transactionService = $transactionService;
+        $this->roundService = $roundService;
     }
 
     /**
@@ -61,7 +62,7 @@ class ActionService extends ServiceProvider
         }
 
         // Process the action and update the game state accordingly
-        $action = new Action([
+        Action::create([
             'round_id' => $this->positionService->getLastRound($hand)->id,
             'seat_id' => $currentSeat->id,
             'action_type' => $actionType,
@@ -73,6 +74,7 @@ class ActionService extends ServiceProvider
         }
 
         #TODO update the round status - complete or not, use the RoundService to implement this
+        $finished = $this->roundService->checkRoundFinish($this->positionService->getLastRound($hand));
     }
 
     public function getAvailableActions($hand) {
