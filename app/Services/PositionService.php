@@ -15,8 +15,7 @@ class PositionService extends ServiceProvider
             $query->where('status', 'active');
         })->with('seat')->get();
 
-        $lastRound = $hand->rounds()->latest()->first();
-        $lastAction = $lastRound ? $lastRound->actions()->latest()->first() : null;
+        $lastAction = $this->getLastAction($hand);
         $lastSeat = $lastAction ? $lastAction->seat_id : $hand->big_blind_id; #TODO Won't work for 2 players
 
         foreach ($activeSeatHands as $seatHand) {
@@ -26,5 +25,19 @@ class PositionService extends ServiceProvider
         }
         // If no active seat hands are found, return null
         return null;
+    }
+
+    public function getLastRound($hand)
+    {
+        return $hand->rounds()->latest()->first();
+    }
+
+    /**
+     * Get the last action taken in the latest round of the hand
+     */
+    public function getLastAction($hand)
+    {
+        $lastRound = $this->getLastRound($hand);
+        return $lastRound ? $lastRound->actions()->latest()->first() : null;
     }
 }
