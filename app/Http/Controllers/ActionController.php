@@ -62,7 +62,8 @@ class ActionController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($hand, $currentSeat, $actionType, $amount, $table) {
+            $winners = null;
+            DB::transaction(function () use ($hand, $currentSeat, $actionType, $amount, &$winners) {
                 $this->actionService->processAction($hand, $currentSeat, $actionType, $amount);
        
                 // If the round is complete, advance to the next round
@@ -71,16 +72,16 @@ class ActionController extends Controller
        
                     // Finalize the hand if the status is complete
                     if ($hand->is_complete) {
-                        $this->handService->finalizeHand($hand);
+                        $winners = $this->handService->finalizeHand($hand);
                     }
                 }
             });
             
             // Set up broadcasting after the transaction is committed
-            DB::afterCommit(function () use ($hand, $table) {
+            DB::afterCommit(function () use ($hand, $table, $winners) {
                 $hand->refresh();
                 if ($hand->is_complete) {
-                    broadcast(new HandFinished($table->id, $hand->id)); # TODO pass winners?
+                    broadcast(new HandFinished($table->id, $hand->id, $winners)); # TODO create winners
                 } else {
                     if ($this->positionService->getLastRound($hand)->is_complete) {
                         broadcast(new RoundAdvanced($table->id, $hand->current_round));
@@ -103,7 +104,7 @@ class ActionController extends Controller
     {       
         $currentSeat = $this->positionService->getCurrentSeat($hand);
 
-        if (!$currentSeat || !$currentSeat->player) {
+        if (!$currentSeat || !$currentSeat->player || !$currentSeat->player->active) {
             return response()->json(['error' => 'Invalid player turn.'], 400);
         }
 
