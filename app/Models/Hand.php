@@ -12,6 +12,7 @@ class Hand extends Model
         'small_blind_id',
         'big_blind_id',
         'community_cards',
+        'is_complete',
     ];
 
     public function table()
@@ -19,7 +20,7 @@ class Hand extends Model
         return $this->belongsTo(Table::class);
     }
 
-    public function seatHand()
+    public function seatHands()
     {
         return $this->hasMany(SeatHand::class);
     }
