@@ -105,8 +105,10 @@ class SeatsController extends Controller
                 'guest_name'    => null,
                 'guest_session' => null,
             ]);
-            // Broadcast the seat update to all listeners
-            broadcast(new TableSeatUpdated($seat->table_id, $seat));
+            DB::afterCommit(function () use ($seat) {
+                // Broadcast the seat update to all listeners
+                broadcast(new TableSeatUpdated($seat->table_id, $seat));
+            });
         });
         
         return back()->with('success', 'You have left the table.');
