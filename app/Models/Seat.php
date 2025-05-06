@@ -20,6 +20,10 @@ class Seat extends Model
         return false;
     }
 
+    /**
+     * Get the next active seat in the table
+     * @return Seat|null
+     */
     public function nextActive() {
         $nextSeat = Seat::where('table_id', $this->table_id)
             ->where('position', '>', $this->position)
