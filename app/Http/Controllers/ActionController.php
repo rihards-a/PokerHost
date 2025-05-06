@@ -8,6 +8,8 @@ use App\Models\Seat;
 use App\Models\Action;
 use App\Services\ActionService;
 use App\Services\PositionService;
+use App\Services\RoundService;
+use App\Services\HandService;
 use App\Events\PlayerTurnChanged;
 use App\Events\RoundAdvanced;
 use Illuminate\Http\Request;
@@ -16,13 +18,14 @@ use Illuminate\Support\Facades\DB;
 
 class ActionController extends Controller
 {
-    protected $actionService;
-    protected $positionService;
+    protected $actionService, $positionService, $roundService, $handService;
 
-    public function __construct(ActionService $actionService, PositionService $positionService)
+    public function __construct(ActionService $actionService, PositionService $positionService, RoundService $roundService, HandService $handService)
     {
         $this->actionService = $actionService;
         $this->positionService = $positionService;
+        $this->roundService = $roundService;
+        $this->handService = $handService;
     }
 
     /**
@@ -59,28 +62,27 @@ class ActionController extends Controller
         }
 
         try {
-            $result = null;
-            DB::transaction(function () use ($hand, $currentSeat, $actionType, $amount, $table, &$result) {
-                $result = $this->actionService->processAction($hand, $currentSeat, $actionType, $amount);
+            DB::transaction(function () use ($hand, $currentSeat, $actionType, $amount, $table) {
+                $this->actionService->processAction($hand, $currentSeat, $actionType, $amount);
        
                 // If the round is complete, advance to the next round
-                if ($result['round_complete']) {
-                    $this->actionService->advanceRound($hand);
+                if ($this->positionService->getLastRound($hand)->is_complete) {
+                    $this->roundService->createNextRound($hand);
        
                     // Finalize the hand if the status is complete
-                    if ($hand->status === 'complete') {
-                        $this->actionService->finalizeHand($hand, $table);
+                    if ($hand->is_complete) {
+                        $this->handService->finalizeHand($hand);
                     }
                 }
             });
             
             // Set up broadcasting after the transaction is committed
-            DB::afterCommit(function () use ($hand, $table, $result) {
+            DB::afterCommit(function () use ($hand, $table) {
                 $hand->refresh();
-                if ($hand->status === 'complete') {
+                if ($hand->is_complete) {
                     broadcast(new HandFinished($table->id, $hand->id)); # TODO pass winners?
                 } else {
-                    if ($result['round_complete']) {
+                    if ($this->positionService->getLastRound($hand)->is_complete) {
                         broadcast(new RoundAdvanced($table->id, $hand->current_round));
                     }
                     $nextSeat = $this->positionService->getCurrentSeat($hand)->nextActive();
@@ -118,7 +120,7 @@ class ActionController extends Controller
             return response()->json(['error' => 'It is not your turn to act.'], 403);
         }
 
-        $actions = $this->actionService->getAvailableActions($hand, $currentSeat);
+        $actions = $this->actionService->getAvailableActions($hand); #TODO implement this in the action service
 
         return response()->json(['actions' => $actions]);
     }
