@@ -10,7 +10,6 @@ class Round extends Model
         'hand_id',
         'type',
         'is_complete',
-        'pot_size',
     ];
 
     protected $dates = ['started_at', 'ended_at'];

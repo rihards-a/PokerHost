@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('rounds', function (Blueprint $table) {
             $table->id();
             $table->enum('type', ['preflop', 'flop', 'turn', 'river']);
-            $table->unsignedInteger('pot_size');
             $table->boolean('is_complete');
             $table->foreignId('hand_id')->constrained()->onDelete('cascade');
             $table->timestamps();

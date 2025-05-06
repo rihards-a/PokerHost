@@ -13,6 +13,7 @@ class Hand extends Model
         'big_blind_id',
         'community_cards',
         'is_complete',
+        'pot_size',
     ];
 
     public function table()
