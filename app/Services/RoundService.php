@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Action;
 use App\Models\Transaction;
+use Illuminate\Support\Collection;
 
 class RoundService
 {
@@ -72,41 +73,23 @@ class RoundService
     protected function checkPreflopFinish($round) 
     {
         $round->load('hand');
-        $nextSeat = $this->positionService->getCurrentSeat($round->hand);
-        $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
-        $currentSeat = $nextSeat->previousActive();
-        $currentSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $currentSeat->id)->latest()->first();
-        switch ($nextSeatPreviousAction->action_type) {
-            case 'fold':
-                $round->update(['is_complete' => true]);
-                break;
-            case 'check':
-                // match with fold, in case the player didn't bother to even check, validation happens inside the action service
-                if ($currentSeatPreviousAction && ($currentSeatPreviousAction->action_type === 'check' || $currentSeatPreviousAction->action_type === 'fold')) {
-                    // check if all players have checked or folded
-                    $allCheckedOrFolded = Action::where('round_id', $round->id)
-                        ->whereIn('action_type', ['check', 'fold'])->count() ===
-                         $round->hand->table()->occupiedSeats()->where('status', 'active')->count();
-                    if ($allCheckedOrFolded) {
-                        $round->update(['is_complete' => true]);
-                        break;
-                    }
-                }
-                break;
-            case 'call':
-                // Handle call action
-                break;
-            case 'raise':
-                // Handle raise action
-                break;
-            case 'bet':
-                // Handle bet action
-                break;
-            case 'allin':
-                // Handle allin action
-                break;
-            default:
-                throw new \Exception('Invalid action type.');
+        $currentSeat = $this->positionService->getCurrentSeat($round->hand);
+        $currentSeatAction = Action::where('round_id', $round->id)->where('seat_id', $currentSeat->id)->latest()->first();
+        $previousNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
+
+        if ($previousNonpassiveAction) { #TODO consider off by one - if the first player raised and everyone called then this might still trigger
+            //TODO  Edge case: the player's all in is less than the last bet/raise amount. Need to look for older significant nonpassive actions
+            if ($currentSeatAction->action_type === 'allin') { 
+                return false;
+            } else {
+                return false; // If there is a non-passive action in the current lap (might be off by one), the round is NOT complete
+            } 
+        } #TODO consider how 'bet' from SB and BB impact this- might not need special handling since they count as nonpassive actions
+
+        // the other non-passive cases are handled by the previousNonpassiveActionForCurrentNonFoldedPlayers method if statement
+        $passive_actions = ['check', 'fold', 'call'];
+        if (in_array($currentSeatAction->action_type, $passive_actions)) {
+            $round->update(['is_complete' => true]);
         }
         return $round->is_complete;
     }
@@ -124,5 +107,51 @@ class RoundService
     protected function checkRiverFinish($round) 
     {
         #TODO as well as the other ones...
+    }
+
+    /**
+     * Check if all players have checked or folded in the current lap of the round.
+     * If not return the last action of the player who has not checked or folded or called.
+     * 
+     * @param mixed $round
+     * @return null|Action
+     */
+    protected function previousNonpassiveActionForCurrentNonFoldedPlayers($round)
+    {   
+        $activeSeatHandsCount = $this->getActiveSeatHandsCount($round);
+        $actions = Action::where('round_id', $round->id)->orderBy('created_at', 'desc')->get();
+        return $this->findNonPassiveAction($actions, $activeSeatHandsCount);
+    }
+
+    public function getActiveSeatHandsCount($round)
+    {
+        $round->load('hand');
+        $occupiedSeats = $round->hand->table()->occupiedSeats()->where('status', 'active'); #TODO the count might be off by one, it shouldn't include the player who is acting now
+        return $occupiedSeats->map(function ($seat) { // gets the amount of active seat hands in the round who haven't folded yet
+            return $seat->seatHand()->where('status', 'active')->first();
+        })->count();
+    }
+
+    /**
+     * Find the first non-passive action in the collection
+     * 
+     * @param Collection $actions Collection of actions
+     * @param int $activeSeatHandsCount Count of active seat hands
+     * @return Action|null Non-passive action or null if none found
+     */
+    protected function findNonPassiveAction($actions, $activeSeatHandsCount)
+    {
+        $passiveActionTypes = ['check', 'fold', 'call'];
+        
+        while($actions->isNotEmpty() && $activeSeatHandsCount > 0) {
+            $action = $actions->shift();
+            if (in_array($action->action_type, $passiveActionTypes)) {
+                $activeSeatHandsCount--;
+            } else {
+                return $action; // Return the non-passive action found
+            }
+        }
+        
+        return null; // No non-passive action found
     }
 }
