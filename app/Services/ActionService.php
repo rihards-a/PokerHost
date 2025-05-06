@@ -52,9 +52,11 @@ class ActionService extends ServiceProvider
                 $amount = 0; // No amount is needed for a check
                 break;
             case 'fold':
+                #TODO update hand status
                 $amount = 0; // No amount is needed for a fold
                 break;
             case 'allin':
+                #TODO update hand status
                 $amount = $player->balance; // All-in is the player's entire balance
                 break;
             default:
