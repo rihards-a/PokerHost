@@ -35,11 +35,12 @@ class HandService
         // Deal cards to the table. Determine dealer, small blind, and big blind
         $hand = Hand::create([
             'table_id' => $table->id,
-            'community_cards' => ["Ah", "Kd", "Qs", "Jc", "9h"], #TODO create a deck and shuffle - make sure users cannot see this or deal it incrementally
+            'community_cards' => json_encode(["Ah", "Kd", "Qs", "Jc", "9h"]), #TODO create a deck and shuffle - make sure users cannot see this or deal it incrementally
             'dealer_id' => $occupiedSeats->first()->id, #TODO maybe use a dealer offset and then skip 'offset % count'
-            'small_blind_id' => $occupiedSeats->find($occupiedSeats->first()->id)->nextActive->id,
-            'big_blind_id' => $occupiedSeats->find($occupiedSeats->first()->id)->nextActive->nextActive->id, #TODO edge case if only 2 players
+            'small_blind_id' => $occupiedSeats->find($occupiedSeats->first()->id)->getNextActive()->id,
+            'big_blind_id' => $occupiedSeats->find($occupiedSeats->first()->id)->getNextActive()->getNextActive()->id, #TODO edge case if only 2 players
             'is_complete' => false,
+            'pot_size' => 0,
         ]);
 
         // Deal cards to each player

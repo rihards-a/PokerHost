@@ -16,7 +16,7 @@ class PositionService
 
         foreach ($activeSeatHands as $seatHand) {
             if ($seatHand->seat_id === $lastSeat) {
-                return $seatHand->seat->nextActive();
+                return $seatHand->seat->getNextActive();
             }
         }
         // If no active seat hands are found, return null

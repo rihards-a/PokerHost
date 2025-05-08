@@ -73,7 +73,7 @@ class RoundService
     {
         $round->load('hand');
         $currentSeat = $this->positionService->getCurrentSeat($round->hand);
-        $nextSeat = $currentSeat->nextActive(); // tracks by seatHand status - allin's excluded
+        $nextSeat = $currentSeat->getNextActive(); // tracks by seatHand status - allin's excluded
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
         $previousNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
         $passive_actions = ['check', 'fold', 'call']; 
@@ -97,7 +97,7 @@ class RoundService
     {
         $round->load('hand');
         $currentSeat = $this->positionService->getCurrentSeat($round->hand);
-        $nextSeat = $currentSeat->nextActive(); // tracks by seatHand status - allin's excluded
+        $nextSeat = $currentSeat->getNextActive(); // tracks by seatHand status - allin's excluded
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
         $previousNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
         $passive_actions = ['check', 'fold', 'call']; 
@@ -121,7 +121,7 @@ class RoundService
     {
         $round->load('hand');
         $currentSeat = $this->positionService->getCurrentSeat($round->hand);
-        $nextSeat = $currentSeat->nextActive(); // tracks by seatHand status - allin's excluded
+        $nextSeat = $currentSeat->getNextActive(); // tracks by seatHand status - allin's excluded
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
         $previousNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
         $passive_actions = ['check', 'fold', 'call']; 
@@ -145,7 +145,7 @@ class RoundService
     {
         $round->load('hand');
         $currentSeat = $this->positionService->getCurrentSeat($round->hand);
-        $nextSeat = $currentSeat->nextActive(); // tracks by seatHand status - allin's excluded
+        $nextSeat = $currentSeat->getNextActive(); // tracks by seatHand status - allin's excluded
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
         $previousNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
         $passive_actions = ['check', 'fold', 'call']; 
