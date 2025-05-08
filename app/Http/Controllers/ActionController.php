@@ -103,7 +103,7 @@ class ActionController extends Controller
                                 break;
                         }
                     }
-                    $nextSeat = $this->positionService->getCurrentSeat($hand)->nextActive();
+                    $nextSeat = $this->positionService->getCurrentSeat($hand)->getNextActive();
                     broadcast(new PlayerTurnChanged($table->id, $nextSeat->id));
                 }
             });
