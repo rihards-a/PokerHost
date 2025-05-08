@@ -2,11 +2,10 @@
 
 namespace App\Services;
 
-use Illuminate\Support\ServiceProvider;
 use App\Models\seatHand;
 use App\Models\Action;
 
-class ActionService extends ServiceProvider
+class ActionService
 {
     protected $positionService, $transactionService, $roundService;
 

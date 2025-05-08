@@ -2,9 +2,7 @@
 
 namespace App\Services;
 
-use Illuminate\Support\ServiceProvider;
-
-class PositionService extends ServiceProvider
+class PositionService
 {
     /**
      * Get the current seat of the player whose turn it is to act
