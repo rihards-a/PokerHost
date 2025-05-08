@@ -24,46 +24,24 @@ class Seat extends Model
      * Get the next active seat in the table
      * @return Seat|null
      */
-    public function nextActive() {
-        $nextSeat = Seat::where('table_id', $this->table_id)
-            ->where('position', '>', $this->position)
-            ->whereHas('player', function($query) {
-                $query->where('status', 'active');
-            })
-            ->first();
-        // Edge case: it's the last seat in the table
-        if (!$nextSeat) {
-            $nextSeat = Seat::where('table_id', $this->table_id)
-                ->where('position', '<=', $this->position)
-                ->whereHas('player', function($query) {
-                    $query->where('status', 'active');
-                })
-                ->first();
-        }
-        return $nextSeat;
+    public function getNextActive() 
+    {
+    // 1) Try to find the very next seat with a higher position
+    $next = Seat::where('table_id', $this->table_id)
+    ->where('position', '>', $this->position)
+    ->whereHas('player', fn($q) => $q->where('active', true))
+    ->orderBy('position', 'asc')
+    ->first();
+
+    if ($next) {
+        return $next;
     }
 
-    /**
-     * Get the previous active seat in the table
-     * @return Seat|null
-     */
-    public function previousActive() {
-        $previousSeat = Seat::where('table_id', $this->table_id)
-            ->where('position', '<', $this->position)
-            ->whereHas('player', function($query) {
-                $query->where('status', 'active');
-            })
-            ->first();
-        // Edge case: it's the first seat in the table
-        if (!$previousSeat) {
-            $previousSeat = Seat::where('table_id', $this->table_id)
-                ->where('position', '>=', $this->position)
-                ->whereHas('player', function($query) {
-                    $query->where('status', 'active');
-                })
-                ->first();
-        }
-        return $previousSeat;
+    // 2) Wrap around: pick the *lowest* active seat (position 1 if occupied)
+    return Seat::where('table_id', $this->table_id)
+        ->whereHas('player', fn($q) => $q->where('active', true))
+        ->orderBy('position', 'asc')
+        ->first();
     }
 
     public function table()
