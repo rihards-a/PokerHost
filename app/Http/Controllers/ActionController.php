@@ -4,14 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Table;
 use App\Models\Hand;
-use App\Models\Seat;
-use App\Models\Action;
 use App\Services\ActionService;
 use App\Services\PositionService;
 use App\Services\RoundService;
 use App\Services\HandService;
 use App\Events\PlayerTurnChanged;
 use App\Events\RoundAdvanced;
+use App\Events\HandFinished;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -63,12 +62,15 @@ class ActionController extends Controller
 
         try {
             $winners = null;
-            DB::transaction(function () use ($hand, $currentSeat, $actionType, $amount, &$winners) {
+            $roundFinished= null;
+            DB::transaction(function () use ($hand, $currentSeat, $actionType, $amount, &$winners,  &$roundFinished) {
+                $lastRound = $this->positionService->getLastRound($hand);
                 $this->actionService->processAction($hand, $currentSeat, $actionType, $amount);
-                $this->roundService->checkRoundFinish($this->positionService->getLastRound($hand));
+                $this->roundService->checkRoundFinish($lastRound);
        
                 // If the round is complete, advance to the next round
-                if ($this->positionService->getLastRound($hand)->is_complete) {
+                if ($lastRound->is_complete) {
+                    $roundFinished = $lastRound;
                     $this->roundService->createNextRound($hand);
        
                     // Finalize the hand if the status is complete
@@ -79,13 +81,27 @@ class ActionController extends Controller
             });
             
             // Set up broadcasting after the transaction is committed
-            DB::afterCommit(function () use ($hand, $table, $winners) {
+            DB::afterCommit(function () use ($hand, $table, $winners, $roundFinished) {
                 $hand->refresh();
                 if ($hand->is_complete) {
-                    broadcast(new HandFinished($table->id, $hand->id, $winners)); # TODO create winners
+                    broadcast(new HandFinished($table->id, $hand->id, $winners));
                 } else {
-                    if ($this->positionService->getLastRound($hand)->is_complete) {
-                        broadcast(new RoundAdvanced($table->id, $hand->current_round));
+                    if ($roundFinished) {
+                        switch ($roundFinished->type) {
+                            case 'preflop':
+                                $cards = array_slice($hand->community_cards, 0, 3);
+                                broadcast(new RoundAdvanced($table->id, $roundFinished->type, $cards));
+                                break;
+                            case 'flop':
+                                $cards = array_slice($hand->community_cards, 3, 1);
+                                broadcast(new RoundAdvanced($table->id, $roundFinished->type, $cards));
+                            case 'turn':
+                                $cards = array_slice($hand->community_cards, 4, 1);
+                                broadcast(new RoundAdvanced($table->id, $roundFinished->type, $cards));
+                            case 'river':
+                                broadcast(new RoundAdvanced($table->id, $roundFinished->type));
+                                break;
+                        }
                     }
                     $nextSeat = $this->positionService->getCurrentSeat($hand)->nextActive();
                     broadcast(new PlayerTurnChanged($table->id, $nextSeat->id));
