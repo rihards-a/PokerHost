@@ -65,6 +65,7 @@ class ActionController extends Controller
             $winners = null;
             DB::transaction(function () use ($hand, $currentSeat, $actionType, $amount, &$winners) {
                 $this->actionService->processAction($hand, $currentSeat, $actionType, $amount);
+                $this->roundService->checkRoundFinish($this->positionService->getLastRound($hand));
        
                 // If the round is complete, advance to the next round
                 if ($this->positionService->getLastRound($hand)->is_complete) {

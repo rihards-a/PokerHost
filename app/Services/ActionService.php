@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\ServiceProvider;
-use App\Models\Transaction;
+use App\Models\seatHand;
 use App\Models\Action;
 
 class ActionService extends ServiceProvider
@@ -25,6 +25,7 @@ class ActionService extends ServiceProvider
     #TODO add tracker for has_checked and has_bet ?
     public function processAction($hand, $currentSeat, $actionType, $amount) {
         $player = $currentSeat->player;
+        $seatHand = seatHand::where('hand_id', $hand->id)->where('seat_id', $currentSeat->id)->first();
         $lastAction = $this->positionService->getLastAction($hand);
 
         // Validate action based on the current game state
@@ -52,12 +53,12 @@ class ActionService extends ServiceProvider
                 $amount = 0; // No amount is needed for a check
                 break;
             case 'fold':
-                #TODO update hand status
                 $amount = 0; // No amount is needed for a fold
+                $seatHand->update(['status' => 'folded']);
                 break;
             case 'allin':
-                #TODO update hand status
                 $amount = $player->balance; // All-in is the player's entire balance
+                $seatHand->update(['status' => 'allin']);
                 break;
             default:
                 throw new \Exception('Invalid action type.');
@@ -74,9 +75,6 @@ class ActionService extends ServiceProvider
         if ($actionType !== 'fold' || $actionType !== 'check') {
             $this->transactionService->betTransaction($hand, $player, $amount);
         }
-
-        #TODO update the round status - complete or not, use the RoundService to implement this
-        $finished = $this->roundService->checkRoundFinish($this->positionService->getLastRound($hand));
     }
 
     public function getAvailableActions($hand) {
