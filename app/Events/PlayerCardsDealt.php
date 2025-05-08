@@ -40,7 +40,8 @@ class PlayerCardsDealt implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("table.{$this->tableId}.seat.{$this->seatId}")
+            // new PrivateChannel("table.{$this->tableId}.seat.{$this->seatId}") #TODO connect front end to this channel later
+            new Channel("table.{$this->tableId}.seat.{$this->seatId}") 
         ];
     }
 
