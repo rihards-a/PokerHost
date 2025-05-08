@@ -10,23 +10,27 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class RoundAdvanced implements ShouldBroadcast
+class PlayerCardsDealt implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $tableId;
-    public $roundType;
+    public $seatId;
     public $cards;
 
     /**
      * Create a new event instance.
      */
-    public function __construct($tableId, $roundType, $cards = null)
+    public function __construct($tableId, $seatId, $cards)
     {
         $this->tableId = $tableId;
-        $this->roundType = $roundType;
+        $this->seatId = $seatId;
         $this->cards = $cards;
     }
+
+    /* $cards = [
+        'card1' => 'As', 
+        'card2' => 'Ks'*/
 
     /**
      * Get the channels the event should broadcast on.
@@ -36,12 +40,12 @@ class RoundAdvanced implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('table.' . $this->tableId),
+            new PrivateChannel("table.{$this->tableId}.seat.{$this->seatId}")
         ];
     }
 
     public function broadcastAs(): string
     {
-        return 'round.advanced';
+        return 'cards.dealt';
     }
 }
