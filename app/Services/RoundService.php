@@ -74,39 +74,96 @@ class RoundService
     {
         $round->load('hand');
         $currentSeat = $this->positionService->getCurrentSeat($round->hand);
-        $currentSeatAction = Action::where('round_id', $round->id)->where('seat_id', $currentSeat->id)->latest()->first();
+        $nextSeat = $currentSeat->nextActive(); // tracks by seatHand status - allin's excluded
+        $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
         $previousNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
+        $passive_actions = ['check', 'fold', 'call']; 
+        $prevAction = $nextSeatPreviousAction->action_type;
 
-        if ($previousNonpassiveAction) { #TODO consider off by one - if the first player raised and everyone called then this might still trigger
-            //TODO  Edge case: the player's all in is less than the last bet/raise amount. Need to look for older significant nonpassive actions
-            if ($currentSeatAction->action_type === 'allin') { 
-                return false;
-            } else {
-                return false; // If there is a non-passive action in the current lap (might be off by one), the round is NOT complete
-            } 
-        } #TODO consider how 'bet' from SB and BB impact this- might not need special handling since they count as nonpassive actions
-
-        // the other non-passive cases are handled by the previousNonpassiveActionForCurrentNonFoldedPlayers method if statement
-        $passive_actions = ['check', 'fold', 'call'];
-        if (in_array($currentSeatAction->action_type, $passive_actions)) {
-            $round->update(['is_complete' => true]);
+        if (!$nextSeatPreviousAction || $prevAction === 'bet') { // in pre-flop, bet is considered passive, since only SB and BB buy-ins are possible bets
+            return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
         }
+
+        if ($previousNonpassiveAction && (in_array($prevAction, $passive_actions)) || // next seats move was passive
+            ($prevAction === 'raise' && $previousNonpassiveAction->amount > $nextSeatPreviousAction->amount)) { // next seat got re-raised
+                return false;
+        }
+
+        // everyone has played a passive action in the last lap of the round
+        $round->update(['is_complete' => true]);
         return $round->is_complete;
     }
 
     protected function checkFlopFinish($round) 
     {
-        #TODO as well as the other ones...
+        $round->load('hand');
+        $currentSeat = $this->positionService->getCurrentSeat($round->hand);
+        $nextSeat = $currentSeat->nextActive(); // tracks by seatHand status - allin's excluded
+        $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
+        $previousNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
+        $passive_actions = ['check', 'fold', 'call']; 
+        $prevAction = $nextSeatPreviousAction->action_type;
+
+        if (!$nextSeatPreviousAction) {
+            return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
+        }
+
+        if ($previousNonpassiveAction && (in_array($prevAction, $passive_actions)) || // next seats move was passive
+            ($prevAction === 'raise' && $previousNonpassiveAction->amount > $nextSeatPreviousAction->amount)) { // next seat got re-raised
+                return false;
+        }
+
+        // everyone has played a passive action in the last lap of the round
+        $round->update(['is_complete' => true]);
+        return $round->is_complete;
     }
 
     protected function checkTurnFinish($round) 
     {
-        #TODO as well as the other ones...
+        $round->load('hand');
+        $currentSeat = $this->positionService->getCurrentSeat($round->hand);
+        $nextSeat = $currentSeat->nextActive(); // tracks by seatHand status - allin's excluded
+        $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
+        $previousNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
+        $passive_actions = ['check', 'fold', 'call']; 
+        $prevAction = $nextSeatPreviousAction->action_type;
+
+        if (!$nextSeatPreviousAction) {
+            return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
+        }
+
+        if ($previousNonpassiveAction && (in_array($prevAction, $passive_actions)) || // next seats move was passive
+            ($prevAction === 'raise' && $previousNonpassiveAction->amount > $nextSeatPreviousAction->amount)) { // next seat got re-raised
+                return false;
+        }
+
+        // everyone has played a passive action in the last lap of the round
+        $round->update(['is_complete' => true]);
+        return $round->is_complete;
     }
 
     protected function checkRiverFinish($round) 
     {
-        #TODO as well as the other ones...
+        $round->load('hand');
+        $currentSeat = $this->positionService->getCurrentSeat($round->hand);
+        $nextSeat = $currentSeat->nextActive(); // tracks by seatHand status - allin's excluded
+        $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
+        $previousNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
+        $passive_actions = ['check', 'fold', 'call']; 
+        $prevAction = $nextSeatPreviousAction->action_type;
+
+        if (!$nextSeatPreviousAction) {
+            return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
+        }
+
+        if ($previousNonpassiveAction && (in_array($prevAction, $passive_actions)) || // next seats move was passive
+            ($prevAction === 'raise' && $previousNonpassiveAction->amount > $nextSeatPreviousAction->amount)) { // next seat got re-raised
+                return false;
+        }
+
+        // everyone has played a passive action in the last lap of the round
+        $round->update(['is_complete' => true]);
+        return $round->is_complete;
     }
 
     /**
@@ -123,11 +180,17 @@ class RoundService
         return $this->findNonPassiveAction($actions, $activeSeatHandsCount);
     }
 
+    /**
+     * Get the count of active seat hands in the round.
+     * 
+     * @param mixed $round
+     * @return int Count of active seat hands
+     */
     public function getActiveSeatHandsCount($round)
     {
         $round->load('hand');
-        $occupiedSeats = $round->hand->table()->occupiedSeats()->where('status', 'active'); #TODO the count might be off by one, it shouldn't include the player who is acting now
-        return $occupiedSeats->map(function ($seat) { // gets the amount of active seat hands in the round who haven't folded yet
+        $occupiedSeats = $round->hand->table()->occupiedSeats()->where('status', 'active');
+        return $occupiedSeats->map(function ($seat) { // gets the amount of active seat hands in the round who haven't folded or allined yet
             return $seat->seatHand()->where('status', 'active')->first();
         })->count();
     }
@@ -143,15 +206,20 @@ class RoundService
     {
         $passiveActionTypes = ['check', 'fold', 'call'];
         
+        // An allin that is less than the last bet/raise amount is considered a passive action - essentially a call
+        $most_significant_action = null;
+
         while($actions->isNotEmpty() && $activeSeatHandsCount > 0) {
             $action = $actions->shift();
+
             if (in_array($action->action_type, $passiveActionTypes)) {
+                if ($most_significant_action ? $action->amount > $most_significant_action->amount : true) {
+                    $most_significant_action = $action;
+                }
                 $activeSeatHandsCount--;
-            } else {
-                return $action; // Return the non-passive action found
             }
         }
         
-        return null; // No non-passive action found
+        return $most_significant_action;
     }
 }
