@@ -19,7 +19,7 @@ class Player extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function seat()
+    public function seats()
     {
         return $this->hasMany(Seat::class);
     }
