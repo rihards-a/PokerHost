@@ -172,7 +172,7 @@ class RoundService
      * @param mixed $round
      * @return null|Action
      */
-    protected function previousNonpassiveActionForCurrentNonFoldedPlayers($round)
+    public function previousNonpassiveActionForCurrentNonFoldedPlayers($round)
     {   
         $activeSeatHandsCount = $this->getActiveSeatHandsCount($round);
         $actions = Action::where('round_id', $round->id)->orderBy('created_at', 'desc')->get();
@@ -187,8 +187,8 @@ class RoundService
      */
     public function getActiveSeatHandsCount($round)
     {
-        $round->load('hand');
-        $occupiedSeats = $round->hand->table()->occupiedSeats()->where('status', 'active');
+        $round->load('hand.table.occupiedSeats');
+        $occupiedSeats = $round->hand->table->occupiedSeats->where('status', 'active');
         return $occupiedSeats->map(function ($seat) { // gets the amount of active seat hands in the round who haven't folded or allined yet
             return $seat->seatHand()->where('status', 'active')->first();
         })->count();
@@ -211,7 +211,7 @@ class RoundService
         while($actions->isNotEmpty() && $activeSeatHandsCount > 0) {
             $action = $actions->shift();
 
-            if (in_array($action->action_type, $passiveActionTypes)) {
+            if (!in_array($action->action_type, $passiveActionTypes)) {
                 if ($most_significant_action ? $action->amount > $most_significant_action->amount : true) {
                     $most_significant_action = $action;
                 }
