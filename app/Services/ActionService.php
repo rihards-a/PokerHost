@@ -76,12 +76,31 @@ class ActionService
         }
     }
 
-    public function getAvailableActions($hand) {
-        $lastAction = $this->positionService->getLastAction($hand);
-        $availableActions = [];
+    public function getAvailableActions($hand, $currentPlayer) {
+        $currentSeat = $currentPlayer->seats()->where('table_id', $hand->table->id)->first();
+        $availableActions = ['fold', 'allin']; // out of 'fold', 'check', 'call', 'raise', 'bet', 'allin'
+        $round = $hand->rounds()->latest()->first();
+        $nonpassiveAction = $this->roundService->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
+        $currentAmount = $this->getTotalBetAmountForCurrentSeatThisRound($currentSeat->id, $round);
 
-        #TODO IMPLEMENT LOGIC FOR CHECKING IF THE ROUND IS LOOPING BECAUSE OF RERAISES
+        if (!$nonpassiveAction) { // no bet (meaning -> no raise or call or allin), only checks or folds
+            $availableActions[] = 'bet';
+            $availableActions[] = 'check';
+        } else {
+            $nonpassiveAmount = $this->getTotalBetAmountForCurrentSeatThisRound($nonpassiveAction->seat->id, $round);
+            if ($nonpassiveAmount < $currentAmount + $currentPlayer->balance) {
+                $availableActions[] = 'call';
+                $availableActions[] = 'raise';
+            }
+        }
 
         return $availableActions;
+    }
+
+    public function getTotalBetAmountForCurrentSeatThisRound($seatId, $round) {
+        return (int) $round
+        ->actions()
+        ->where('seat_id', $seatId)
+        ->sum('amount');
     }
 }
