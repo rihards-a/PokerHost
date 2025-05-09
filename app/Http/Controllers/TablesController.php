@@ -91,6 +91,7 @@ class TablesController extends Controller
     /**
      * Show the seats for a specific table.
      */
+    #TODO load the current user player model too - to retrieve cards after reloading - also retrieve rounds from hand?
     public function show(Table $table) {
         // Ensure we load the host and seats relationships
         $table->load('host', 'seats');
@@ -178,7 +179,9 @@ class TablesController extends Controller
             broadcast(new TableStatusUpdated($table->id, $table->status));
         });
 
-        return back()->with('success', 'Table status updated successfully!');
+        return response()->json([
+            'status' => 'ok',
+          ]);
     }
 
     /**
