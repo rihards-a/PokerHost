@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TablesController;
 use App\Http\Controllers\SeatsController;
 use App\Http\Controllers\HandController;
+use App\Http\Controllers\ActionController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -32,9 +33,10 @@ Route::post('/seats/{seat}/leave', [SeatsController::class, 'leave'])->name('sea
 Route::post('/tables/{table}/start-hand', [HandController::class, 'start'])->name('tables.start-hand');
 
 // Action management
-Route::post('/tables/{table}/hands/{hand}/actions', [TablesController::class, 'process'])->name('tables.action.process');
-Route::get('/tables/{table}/hands/{hand}/actions', [TablesController::class, 'getAvailableActions'])->name('tables.action.get');
-
+Route::post('/tables/{table}/hands/{hand}/actions', [ActionController::class, 'process'])->name('tables.action.process');
+Route::get('/tables/{table}/hands/{hand}/actions', [ActionController::class, 'getAvailableActions'])->name('tables.action.get');
+// for receiving player data
+Route::get('players/me', [ActionController::class, 'getOwnPlayerData']);
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

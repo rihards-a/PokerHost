@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Table;
 use App\Models\Hand;
+use App\Models\Player;
 use App\Services\ActionService;
 use App\Services\PositionService;
 use App\Services\RoundService;
@@ -44,7 +45,7 @@ class ActionController extends Controller
         $currentSeat = $this->positionService->getCurrentSeat($hand);
         
         if (!$currentSeat) {
-            return back()->with('error', 'Invalid player turn.');
+            return response()->json(['error' => 'Invalid player turn.'], 400);
         }
 
         $isAuth = Auth::check();
@@ -57,7 +58,7 @@ class ActionController extends Controller
         }
 
         if (!$isUsersTurn) {
-            return back()->with('error', 'It is not your turn to act.');
+            return response()->json(['error' => 'It is not your turn to act.'], 403);
         }
 
         try {
@@ -108,29 +109,29 @@ class ActionController extends Controller
                 }
             });
        
-            return back()->with('success', 'Action processed successfully.');
+            return response()->json(['status' => 'success']);
         } catch (\Throwable $e) {
-            return back()->with('error', 'Failed to process action: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to process action: ' . $e->getMessage()]);
         }
     }
 
     /**
      * Get available actions for the current player
      */
-    public function getAvailableActions(Hand $hand)
-    {       
-        $currentSeat = $this->positionService->getCurrentSeat($hand);
+    public function getAvailableActions(Table $table, Hand $hand)
+    {
+        $currentSeatPlayer = $this->positionService->getCurrentSeat($hand)->player;
 
-        if (!$currentSeat || !$currentSeat->player || !$currentSeat->player->active) {
+        if (!$currentSeatPlayer || !$currentSeatPlayer->active) {
             return response()->json(['error' => 'Invalid player turn.'], 400);
         }
 
         $isAuth = Auth::check();
         $isUsersTurn = false;
 
-        if ($isAuth && $currentSeat->player->user_id === Auth::id()) {
+        if ($isAuth && $currentSeatPlayer->user_id === Auth::id()) {
             $isUsersTurn = true;
-        } elseif (!$isAuth && $currentSeat->player->guest_session === session()->getId()) {
+        } elseif (!$isAuth && $currentSeatPlayer->guest_session === session()->getId()) {
             $isUsersTurn = true;
         }
 
@@ -138,8 +139,35 @@ class ActionController extends Controller
             return response()->json(['error' => 'It is not your turn to act.'], 403);
         }
 
-        $actions = $this->actionService->getAvailableActions($hand); #TODO implement this in the action service
+        $actions = $this->actionService->getAvailableActions($hand, $currentSeatPlayer); #TODO implement this in the action service
 
         return response()->json(['actions' => $actions]);
+    }
+
+    public function getOwnPlayerData(Request $request)
+    {
+        // Try authenticated user
+        if (Auth::check()) {
+            $player = Player::where('user_id', Auth::id())->first();
+        }
+        else {
+            // Fallback to guest
+            $guestSessionId = $request->session()->getId();
+            $player = $guestSessionId ? Player::where('guest_session', $guestSessionId)->first() : null;
+        }
+
+        // If no player found, 204 No Content
+        if (! $player) {
+            return response()->json(null, 204);
+        }
+
+        // Return only the specified attributes
+        return response()->json([
+            'active'        => $player->active,
+            'balance'       => $player->balance ? $player->balance : 0,
+            'guest_name'    => $guestSessionId ? $player->guest_name : Auth::user()->name,
+            'guest_session' => $guestSessionId ? $player->guest_session : null,
+            'user_id'       => $guestSessionId ? $player->user_id : null,
+        ], 200);
     }
 }
