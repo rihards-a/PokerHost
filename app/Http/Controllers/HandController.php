@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Table;
+use App\Models\Seat;
 use App\Services\HandService;
 use App\Events\HandStarted;
 use App\Events\PlayerTurnChanged;
@@ -24,6 +25,7 @@ class HandController extends Controller
     /**
      * Start a new hand at the table.
      */
+    #TODO deal out BB and SB bets
     public function start(Table $table)
     {
         if (Auth::id() !== $table->host_id) {
@@ -39,6 +41,11 @@ class HandController extends Controller
             DB::transaction(function () use ($table, $occupiedSeats, &$hand) {
                 $hand = $this->handService->initializeHand($table, $occupiedSeats);
 
+                $hand->rounds()->create([
+                    'type' => 'preflop',
+                    'is_complete' => false,
+                ]);
+
                 // Refresh the occupied seats to get the newly created seatHands
                 $occupiedSeats->each(function ($seat) {
                     $seat->refresh();
@@ -52,14 +59,14 @@ class HandController extends Controller
                             'card2' => $seat->seatHand->first()->card2,
                         ]));
                     }
-                    $nextToAct = $table->occupiedSeats->find($hand->big_blind_id)->getNextActive()->id;
                     broadcast(new HandStarted($table->id, $hand->id, [
                         'dealer'       => $hand->dealer_seat_id,
-                        'small_blind'  => $hand->small_blind_id,
-                        'big_blind'    => $hand->big_blind_id,
-                        'next_to_act'  => $nextToAct,
+                        'small_blind'  => Seat::find($hand->small_blind_id)->position,
+                        'big_blind'    => Seat::find($hand->big_blind_id)->position,
+                        'next_to_act'  => 'remove', #TODO unnecessary
                     ]));
-    
+                    
+                    $nextToAct = $table->occupiedSeats->find($hand->big_blind_id)->getNextActive()->id;
                     broadcast(new PlayerTurnChanged($table->id, $nextToAct));
                 });
             });
