@@ -38,12 +38,12 @@ class HandStarted implements ShouldBroadcast
      *
      * @return array<int, \Illuminate\Broadcasting\Channel>
      */
-    public function broadcastOn(): array
-    {
-        return [
-            new PrivateChannel('channel-name'),
-        ];
-    }
+     public function broadcastOn(): array
+     {
+         return [
+             new Channel('table.' . $this->tableId),
+         ];
+     }
 
     public function broadcastAs(): string
     {
