@@ -41,7 +41,7 @@ class Table extends Model
         ->whereHas('player', function($q) {
             $q->whereNotNull('user_id')
               ->orWhereNotNull('guest_session');
-        });
+        })->orderBy('position');
     }
 
     public function host()
