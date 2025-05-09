@@ -1,321 +1,211 @@
 <template>
-  <div class="table-container">
-    <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
-      <!-- Table header -->
-      <div class="bg-white shadow-md rounded-lg mb-6 p-6">
-        <div class="flex justify-between items-center flex-wrap gap-3">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900">{{ table.name }}</h1>
-            <div class="text-sm text-gray-500 mt-1">
-              <span class="font-medium">Game:</span> {{ formatGameType(table.gameType) }}
-              <span class="mx-2">•</span>
-              <span class="font-medium">Host:</span> {{ table.hostName }}
-              <span class="mx-2">•</span>
-              <span class="font-medium">Created:</span> {{ table.created }}
-            </div>
-          </div>
-          
-          <div class="flex gap-3">
-            <span 
-              :class="[
-                'px-3 py-1 rounded-full text-sm font-medium',
-                tableStatus === 'open' ? 'bg-green-100 text-green-800' : 
-                  isPlaying ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'
-              ]"
-            >
-              {{ tableStatus === 'open' ? 'Open' : (isPlaying ? 'Playing' : 'Closed') }}
-            </span>
-            
-            <Link 
-              v-if="!isAtTable"
-              href="/" 
-              class="inline-flex items-center px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition"
-            >
-              <span>Back to Tables</span>
-            </Link>
-            
-            <button 
-              v-if="isHost && !isPlaying" 
-              @click="toggleTableStatus"
-              class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 transition"
-            >
-              {{ tableStatus === 'open' ? 'Close Table' : 'Open Table' }}
-            </button>
-            
-            <button 
-              v-if="isHost && tableStatus !== 'open' && !isPlaying && hasEnoughPlayers" 
-              @click="startGame"
-              class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-500 transition"
-            >
-              Start Game
-            </button>
-          </div>
-        </div>
+  <div class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">Poker Table: {{ table.name }}</h1>
+    
+    <div class="poker-table-container p-4">
+      <div class="mb-4 p-2 bg-gray-100 rounded">
+        <p><strong>Game Type:</strong> {{ table.gameType }}</p>
+        <p><strong>Host:</strong> {{ table.hostName }}</p>
+        <p><strong>Status:</strong> {{ table.status }}</p>
+        <p><strong>Created:</strong> {{ table.created }}</p>
       </div>
-      
-      <!-- Game info and pot -->
-      <div v-if="isPlaying" class="bg-white shadow-md rounded-lg mb-6 p-4">
-        <div class="flex justify-between items-center">
-          <div>
-            <div class="text-lg font-bold">Hand #{{ currentHandId || '--' }}</div>
-            <div class="text-sm text-gray-600 mt-1">
-              <span v-if="dealerSeat">Dealer: Seat {{ dealerSeat.position }}</span>
-              <span v-if="dealerSeat && smallBlindSeat" class="mx-2">•</span>
-              <span v-if="smallBlindSeat">Small Blind: Seat {{ smallBlindSeat.position }}</span>
-              <span v-if="smallBlindSeat && bigBlindSeat" class="mx-2">•</span>
-              <span v-if="bigBlindSeat">Big Blind: Seat {{ bigBlindSeat.position }}</span>
-            </div>
-          </div>
-          <div class="text-center">
-            <div class="text-2xl font-bold">${{ currentPot }}</div>
-            <div class="text-sm text-gray-600">Current Pot</div>
-          </div>
-          <div class="text-right">
-            <div v-if="activeSeat" class="text-lg font-semibold text-blue-600">
-              {{ isUserTurn ? "Your Turn" : `${activeSeat.userName}'s Turn` }}
-            </div>
-            <div class="text-sm text-gray-600">
-              Round: {{ formatRound(currentRound) }}
-            </div>
-          </div>
-        </div>
+
+      <!-- Hand information -->
+      <div v-if="currentHand" class="mb-4 p-2 bg-blue-100 rounded">
+        <p><strong>Hand #{{ currentHand }}</strong></p>
+        <p v-if="community.length > 0"><strong>Community Cards:</strong> {{ community.join(' ') }}</p>
+        <p v-if="currentPot > 0"><strong>Pot:</strong> ${{ currentPot }}</p>
+        <p v-if="currentRound"><strong>Round:</strong> {{ currentRound }}</p>
       </div>
-      
-      <!-- Community cards -->
-      <div v-if="isPlaying" class="bg-white shadow-md rounded-lg mb-6 p-4 text-center">
-        <div class="mb-2 text-sm text-gray-600">Community Cards</div>
-        <div class="flex justify-center gap-2">
-          <div 
-            v-for="(card, index) in communityCards" 
-            :key="index" 
-            class="card-container"
-          >
-            <div class="w-12 h-16 bg-white rounded-md border border-gray-300 flex items-center justify-center shadow-sm">
-              <span :class="['font-bold', card.suit === '♥' || card.suit === '♦' ? 'text-red-600' : 'text-gray-900']">
-                {{ card.value }}{{ card.suit }}
-              </span>
-            </div>
-          </div>
-          <div 
-            v-for="n in (5 - communityCards.length)" 
-            :key="`empty-${n}`" 
-            class="w-12 h-16 bg-gray-100 rounded-md border border-gray-300 flex items-center justify-center shadow-sm"
-          >
-            <span class="text-gray-400">?</span>
-          </div>
-        </div>
+
+      <!-- Your cards -->
+      <div v-if="playerCards.length > 0" class="mb-4 p-2 bg-green-100 rounded">
+        <h2 class="font-bold">Your Cards</h2>
+        <p>{{ playerCards.join(' ') }}</p>
       </div>
-      
-      <!-- Poker table visualization -->
-      <div class="poker-table-container bg-white shadow-md rounded-lg overflow-hidden">
-        <div class="relative bg-green-700 rounded-full mx-auto my-12 flex justify-center items-center" style="width: 80%; height: 400px;">
-          <!-- Table felt -->
-          <div class="absolute inset-0 rounded-full bg-green-800 m-10"></div>
-          
-          <!-- Center info -->
-          <div class="relative z-10 text-white text-center">
-            <h2 class="font-bold text-xl">{{ table.name }}</h2>
-            <p v-if="!isPlaying">{{ formatGameType(table.gameType) }}</p>
-            <div v-else class="text-2xl font-bold mt-2">${{ currentPot }}</div>
-          </div>
-          
-          <!-- Seats around the table -->
-          <div v-for="seat in displaySeats" :key="seat.id" class="absolute z-20" :style="positionSeat(seat.position, displaySeats.length)">
-            <div class="seat-container">
-              <div 
-                :class="[
-                  'relative w-24 h-24 rounded-full flex items-center justify-center flex-col',
-                  getSeatClass(seat)
-                ]"
-              >
-                <!-- Dealer button -->
-                <div 
-                  v-if="isPlaying && dealerSeat && dealerSeat.id === seat.id" 
-                  class="absolute -top-3 left-0 w-6 h-6 bg-white text-gray-800 rounded-full flex items-center justify-center text-xs font-bold border-2 border-gray-800"
-                >
-                  D
-                </div>
-                
-                <!-- Player cards -->
-                <div v-if="isPlaying && seat.isOccupied && seat.cards && seat.cards.length > 0" class="absolute -bottom-6 flex gap-1">
-                  <div 
-                    v-for="(card, index) in seat.cards" 
-                    :key="`card-${index}`" 
-                    class="w-8 h-12 bg-white rounded-sm border border-gray-300 flex items-center justify-center shadow-sm transform rotate-3"
-                  >
-                    <span 
-                      v-if="isCurrentUser(seat) || seat.showCards" 
-                      :class="['text-xs font-bold', card.suit === '♥' || card.suit === '♦' ? 'text-red-600' : 'text-gray-900']"
-                    >
-                      {{ card.value }}{{ card.suit }}
-                    </span>
-                    <span v-else class="text-gray-400 text-xs">?</span>
-                  </div>
-                </div>
-                
-                <template v-if="seat.isOccupied">
-                  <span class="font-medium text-sm">{{ seat.userName }}</span>
-                  <span class="text-xs">
-                    {{ isCurrentUser(seat) ? '(You)' : '' }}
-                  </span>
-                  <div v-if="isPlaying" class="mt-1 text-xs">
-                    ${{ seat.chips || 0 }}
-                  </div>
-                  <div v-if="isPlaying && seat.currentBet" class="absolute -top-6 bg-yellow-100 text-yellow-800 px-2 py-1 rounded-md text-xs font-medium">
-                    Bet: ${{ seat.currentBet }}
-                  </div>
-                  <div 
-                    v-if="activeSeat && activeSeat.id === seat.id" 
-                    class="absolute -right-1 top-0 w-4 h-4 bg-blue-500 rounded-full animate-pulse"
-                  ></div>
-                </template>
-                <template v-else>
-                  <span>Seat {{ seat.position }}</span>
-                  <button 
-                    v-if="canJoinSeat && tableStatus === 'open'"
-                    @click="joinSeat(seat.id)"
-                    class="mt-2 text-xs bg-blue-600 text-white py-1 px-2 rounded hover:bg-blue-500"
-                  >
-                    Join
-                  </button>
-                </template>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Hand result display -->
-      <div v-if="winnerInfo && winnerInfo.length > 0" class="mt-4 bg-white shadow-md rounded-lg p-4 mb-6">
-        <h3 class="text-lg font-bold mb-2">Hand Result</h3>
-        <div v-for="(winner, index) in winnerInfo" :key="`winner-${index}`" class="mb-2">
-          <div class="flex items-center">
-            <div class="text-lg font-medium">{{ winner.userName }}</div>
-            <div class="ml-2 text-sm text-gray-600">
-              won ${{ winner.amount }} with {{ winner.handName }}
-            </div>
-          </div>
-          <div class="flex gap-1 mt-1">
-            <div 
-              v-for="(card, cardIndex) in winner.cards" 
-              :key="`winner-card-${cardIndex}`" 
-              class="w-8 h-12 bg-white rounded-sm border border-gray-300 flex items-center justify-center shadow-sm"
-            >
-              <span :class="['text-xs font-bold', card.suit === '♥' || card.suit === '♦' ? 'text-red-600' : 'text-gray-900']">
-                {{ card.value }}{{ card.suit }}
-              </span>
-            </div>
-          </div>
-        </div>
-        <button 
-          v-if="isHost" 
-          @click="startNewHand"
-          class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 transition"
-        >
-          Deal Next Hand
-        </button>
-      </div>
-      
-      <!-- Player actions -->
-      <div v-if="isPlaying && isUserTurn" class="mt-4 bg-white shadow-md rounded-lg p-4 mb-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="text-lg font-bold">Your Turn</h3>
-            <div class="text-sm text-gray-600">Current bet: ${{ currentBet }}</div>
-          </div>
-          <div class="flex gap-2">
-            <button 
-              @click="playerAction('fold')"
-              class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-500 transition"
-            >
-              Fold
-            </button>
-            <button 
-              v-if="canCheck"
-              @click="playerAction('check')"
-              class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition"
-            >
-              Check
-            </button>
-            <button 
-              v-else
-              @click="playerAction('call')"
-              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 transition"
-            >
-              Call ${{ callAmount }}
-            </button>
-            <button 
-              @click="openBetDialog"
-              class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-500 transition"
-            >
-              {{ currentBet > 0 ? 'Raise' : 'Bet' }}
-            </button>
-          </div>
+
+      <!-- Table display -->
+      <div class="poker-table relative bg-green-700 rounded-full h-64 w-full mb-6 flex items-center justify-center">
+        <div v-if="currentDealer" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white font-bold bg-blue-800 p-1 rounded">
+          Dealer
         </div>
         
-        <!-- Bet dialog -->
-        <div v-if="showBetDialog" class="mt-4 p-4 border border-gray-300 rounded-lg">
-          <h4 class="font-medium mb-2">{{ currentBet > 0 ? 'Raise to' : 'Bet amount' }}</h4>
-          <div class="flex items-center gap-2">
-            <input 
-              v-model.number="betAmount" 
-              type="number" 
-              :min="minBet" 
-              :max="maxBet" 
-              class="border border-gray-300 rounded px-3 py-2 w-32"
-            />
-            <div class="text-sm text-gray-600">
-              Min: ${{ minBet }} | Max: ${{ maxBet }}
-            </div>
-            <button 
-              @click="playerAction('bet')"
-              class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-500 transition ml-auto"
-            >
-              Confirm
-            </button>
-            <button 
-              @click="showBetDialog = false"
-              class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-400 transition"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Game log -->
-      <div class="mt-4 bg-white shadow-md rounded-lg p-4 h-40 overflow-y-auto">
-        <h3 class="text-lg font-bold mb-2">Game Log</h3>
-        <div v-for="(log, index) in gameLogs" :key="`log-${index}`" class="text-sm mb-1">
-          <span class="text-gray-500">{{ log.time }}:</span> 
-          <span>{{ log.message }}</span>
-        </div>
-        <div v-if="gameLogs.length === 0" class="text-gray-500 text-sm">No activity yet</div>
-      </div>
-      
-      <!-- Actions -->
-      <div class="mt-6 text-center" v-if="userCurrentSeat && !isPlaying">
-        <button 
-          @click="leaveSeat"
-          class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-500 transition"
+        <!-- Seats around the table -->
+        <div 
+          v-for="seat in seats" 
+          :key="seat.id"
+          :class="[
+            'seat absolute w-16 h-16 rounded-full flex items-center justify-center',
+            seat.isOccupied ? 'bg-gray-300' : 'bg-gray-100',
+            seat.id === currentTurnSeatId ? 'ring-4 ring-yellow-400' : '',
+          ]"
+          :style="getSeatPositionStyle(seat.position)"
         >
-          Leave Table
+          <div v-if="seat.isOccupied" class="text-center">
+            <p class="text-sm font-bold">{{ seat.userName }}</p>
+            <p v-if="seatActions[seat.id]" class="text-xs">
+              {{ seatActions[seat.id].type }} ${{ seatActions[seat.id].amount }}
+            </p>
+          </div>
+          <button 
+            v-else-if="!userCurrentSeat && !seat.isOccupied" 
+            @click="joinSeat(seat.id)"
+            class="text-xs bg-blue-500 text-white p-1 rounded hover:bg-blue-600"
+          >
+            Join
+          </button>
+        </div>
+      </div>
+
+      <!-- Table controls -->
+      <div class="mb-4 flex space-x-2">
+        <button 
+          v-if="userCurrentSeat" 
+          @click="leaveSeat()"
+          class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+        >
+          Leave Seat
         </button>
+        
+        <button 
+          v-if="isHost && table.status === 'closed' && hasEnoughPlayers"
+          @click="startHand()"
+          class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+        >
+          Start Hand
+        </button>
+
+        <button 
+            v-if="isHost" 
+            @click="toggleTableStatus"
+            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 transition"
+          >
+            {{ table.status === 'open' ? 'Close Table' : 'Open Table' }}
+          </button>
+      </div>
+
+      <!-- Action buttons -->
+      <div v-if="isPlayerTurn && table.status === 'closed'" class="mb-4 p-2 bg-yellow-100 rounded">
+        <h2 class="font-bold mb-2">Your Turn</h2>
+        
+        <!-- Standard action buttons -->
+        <div class="flex space-x-2 mb-3">
+          <button
+            @click="takeAction('fold')"
+            class="px-3 py-1 rounded"
+            :class="availableActions.includes('fold') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
+            :disabled="!availableActions.includes('fold')"
+          >
+            Fold
+          </button>
+          
+          <button
+            @click="takeAction('check')"
+            class="px-3 py-1 rounded"
+            :class="availableActions.includes('check') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
+            :disabled="!availableActions.includes('check')"
+          >
+            Check
+          </button>
+          
+          <button
+            @click="takeAction('call')"
+            class="px-3 py-1 rounded"
+            :class="availableActions.includes('call') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
+            :disabled="!availableActions.includes('call')"
+          >
+            Call
+          </button>
+          
+          <button
+            @click="takeAction('allin')"
+            class="px-3 py-1 rounded"
+            :class="availableActions.includes('allin') ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
+            :disabled="!availableActions.includes('allin')"
+          >
+            All In
+          </button>
+        </div>
+
+        <!-- Bet/Raise controls -->
+        <div v-if="availableActions.includes('bet') || availableActions.includes('raise')" class="flex items-center space-x-3">
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              {{ availableActions.includes('bet') ? 'Bet Amount' : 'Raise Amount' }}
+            </label>
+            
+            <!-- Slider for amount -->
+            <input 
+              type="range" 
+              v-model.number="betAmount" 
+              :min="minBetAmount" 
+              :max="currentPlayer?.balance || 0" 
+              class="w-full"
+            />
+            
+            <!-- Manual input for amount -->
+            <div class="flex mt-2 items-center">
+              <input 
+                type="number" 
+                v-model.number="betAmount" 
+                :min="minBetAmount" 
+                :max="currentPlayer?.balance || 0" 
+                class="px-2 py-1 border rounded w-24 text-right" 
+              />
+              <span class="ml-2">chips</span>
+            </div>
+            
+            <!-- Quick bet buttons -->
+            <div class="flex space-x-2 mt-2">
+              <button 
+                @click="betAmount = calculatePotPercentage(0.5)" 
+                class="px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
+              >
+                1/2 Pot
+              </button>
+              <button 
+                @click="betAmount = calculatePotPercentage(0.75)" 
+                class="px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
+              >
+                3/4 Pot
+              </button>
+              <button 
+                @click="betAmount = calculatePotPercentage(1)" 
+                class="px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
+              >
+                Pot
+              </button>
+            </div>
+          </div>
+          
+          <!-- Bet/Raise button -->
+          <button
+            @click="takeAction(availableActions.includes('bet') ? 'bet' : 'raise', betAmount)"
+            class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          >
+            {{ availableActions.includes('bet') ? 'Bet' : 'Raise' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Game log -->
+      <div class="mt-4">
+        <h2 class="font-bold mb-2">Game Log</h2>
+        <div class="bg-gray-100 p-2 rounded h-32 overflow-y-auto">
+          <p v-for="(log, index) in gameLogs" :key="index" class="text-sm">
+            {{ log }}
+          </p>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { Link } from '@inertiajs/vue3';
-import { useForm } from '@inertiajs/vue3';
+import { defineComponent } from 'vue';
 import Pusher from 'pusher-js';
 
-export default {
-  components: {
-    Link
-  },
-  
+export default defineComponent({
   props: {
     table: Object,
     seats: Array,
@@ -325,65 +215,64 @@ export default {
   
   data() {
     return {
-      displaySeats: [...this.seats],
-      tableStatus: this.table.status,
-      userCurrentSeat: this.currentUserSeat,
-      isPlaying: false,
       pusher: null,
       channel: null,
-      currentHandId: null,
-      dealerSeat: null,
-      smallBlindSeat: null, 
-      bigBlindSeat: null,
-      activeSeat: null,
+      secret: null,
+      playerCards: [],
+      community: [],
+      currentHand: null,
+      currentTurnSeatId: null,
+      currentDealer: null,
       currentRound: null,
-      communityCards: [],
       currentPot: 0,
-      currentBet: 0,
-      callAmount: 0,
-      winnerInfo: null,
-      showBetDialog: false,
+      isPlayerTurn: false,
+      availableActions: [],
       betAmount: 0,
-      minBet: 2,
-      maxBet: 100,
-      gameLogs: []
+      minBetAmount: 10, // Default minimum bet
+      seatActions: {},
+      gameLogs: [],
+      userCurrentSeat: this.currentUserSeat, // Initialize from prop
+      currentPlayer: null // Will store the current player object with balance
     };
   },
   
   computed: {
-    isAtTable() {
-      return !!this.userCurrentSeat;
-    },
-    
-    canJoinSeat() {
-      return !this.userCurrentSeat;
-    },
-    
     hasEnoughPlayers() {
-      // Require at least 2 players to start
-      return this.displaySeats.filter(seat => seat.isOccupied).length >= 2;
+      return this.seats.filter(seat => seat.isOccupied).length >= 2;
     },
     
-    isUserTurn() {
-      return this.activeSeat && this.userCurrentSeat && this.activeSeat.id === this.userCurrentSeat.id;
-    },
-    
-    canCheck() {
-      if (!this.userCurrentSeat) return false;
-      
-      const userSeat = this.displaySeats.find(s => s.id === this.userCurrentSeat.id);
-      const userCurrentBet = userSeat && userSeat.currentBet ? userSeat.currentBet : 0;
-      
-      return userCurrentBet >= this.currentBet;
+    // Calculate pot percentage for quick bet buttons
+    calculatePotPercentage() {
+      return (percentage) => {
+        return Math.min(
+          Math.floor(this.currentPot * percentage), 
+          this.currentPlayer?.balance || 0
+        );
+      };
     }
   },
   
-  created() {
+  mounted() {
     this.connectToPusher();
+    this.addLog('Welcome to the poker table!');
+    
+    // Get current player information if seated
+    if (this.userCurrentSeat) {
+      this.getCurrentPlayerInfo();
+    }
   },
   
   beforeUnmount() {
-    this.disconnectFromPusher();
+    // Clean up Pusher connections
+    if (this.secret) {
+      this.pusher.unsubscribe('table.' + this.table.id + '.seat.' + this.userCurrentSeat.id);
+    }
+    if (this.channel) {
+      this.pusher.unsubscribe('table.' + this.table.id);
+    }
+    if (this.pusher) {
+      this.pusher.disconnect();
+    }
   },
   
   methods: {
@@ -396,7 +285,14 @@ export default {
       
       // Subscribe to the table channel
       this.channel = this.pusher.subscribe('table.' + this.table.id);
-      this.secret = this.pusher.subscribe('table.' + this.table.id + '.seat.' + this.userCurrentSeat.id); // private channel
+      
+      // Subscribe to private channel if user has a seat
+      if (this.userCurrentSeat) {
+        this.secret = this.pusher.subscribe('table.' + this.table.id + '.seat.' + this.userCurrentSeat.id);
+        this.secret.bind('cards.dealt', (data) => {
+          this.handleCardsDealt(data.seatId, data.cards);
+        });
+      }
       
       // Bind to events
       this.channel.bind('seat.updated', (data) => {
@@ -422,76 +318,247 @@ export default {
       this.channel.bind('hand.started', (data) => {
         this.handleHandStarted(data.handId, data.data);
       });
-
-      this.secret.bind('cards.dealt', (data) => {
-        this.handleCardsDealt(data.seatId, data.cards);
+      
+      this.channel.bind('action.taken', (data) => {
+        this.handleActionTaken(data.seatId, data.action, data.amount);
       });
-      
-      // Add listener for the new cards.dealt event
-      //this.secret.bind('cards.dealt', (data) => {
-      //  this.handleCardsDealt(data.seatId, data.cards);
-      //});
+    },
+
+    toggleTableStatus() {
+      fetch(`/tables/${this.table.id}/toggle-status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to toggle table status');
+        return response.json();
+      })
+      .then(data => {
+        this.addLog(`Table status changed to: ${data.status}`);
+        this.table.status = data.status;
+      })
+      .catch(error => {
+        console.error('Error toggling table status:', error);
+        this.addLog('Error toggling table status: ' + error.message);
+      });
+    },
+
+    // Get current player information
+    getCurrentPlayerInfo() {
+      fetch(`/players/me`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to get player info');
+        return response.json();
+      })
+      .then(data => {
+        this.currentPlayer = data.player;
+        this.betAmount = Math.min(this.minBetAmount, this.currentPlayer.balance);
+      })
+      .catch(error => {
+        console.error('Error getting player info:', error);
+      });
+    },
+
+    // Handle user actions
+    joinSeat(seatId) {
+      fetch(`/seats/${seatId}/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to join seat');
+        return response.json();
+      })
+      .then(data => {
+        this.addLog('You joined seat #' + seatId);
+        // After joining, reconnect to Pusher to get private channel
+        this.userCurrentSeat = { id: seatId };
+        this.connectToPusher();
+        this.getCurrentPlayerInfo();
+      })
+      .catch(error => {
+        console.error('Error joining seat:', error);
+        this.addLog('Error joining seat: ' + error.message);
+      });
     },
     
-    disconnectFromPusher() {
-      if (this.channel) {
-        this.channel.unbind_all();
-        this.pusher.unsubscribe('table.' + this.table.id);
-      }
+    leaveSeat() {
+      if (!this.userCurrentSeat) return;
       
-      if (this.pusher) {
-        this.pusher.disconnect();
-      }
+      fetch(`/seats/${this.userCurrentSeat.id}/leave`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to leave seat');
+        return response.json();
+      })
+      .then(data => {
+        this.addLog('You left your seat');
+        // Clean up private channel subscription
+        if (this.secret) {
+          this.pusher.unsubscribe('table.' + this.table.id + '.seat.' + this.userCurrentSeat.id);
+          this.secret = null;
+        }
+        this.userCurrentSeat = null;
+        this.playerCards = [];
+        this.isPlayerTurn = false;
+        this.availableActions = [];
+        this.currentPlayer = null;
+      })
+      .catch(error => {
+        console.error('Error leaving seat:', error);
+        this.addLog('Error leaving seat: ' + error.message);
+      });
     },
     
-    handleSeatUpdate(updatedSeat) {
-      // Find and update the seat in our local state
-      const index = this.displaySeats.findIndex(s => s.id === updatedSeat.id);
-      if (index !== -1) {
-        // Preserve cards if they exist
-        const existingCards = this.displaySeats[index].cards || [];
-        this.displaySeats[index] = { ...updatedSeat, cards: existingCards };
-      }
-      
-      // Update user's current seat if relevant
-      if (this.userCurrentSeat && this.userCurrentSeat.id === updatedSeat.id) {
-        if (!updatedSeat.isOccupied) {
-          this.userCurrentSeat = null;
-        } else {
-          this.userCurrentSeat = updatedSeat;
+    startHand() {
+      fetch(`/tables/${this.table.id}/start-hand`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         }
-      }
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to start hand');
+        return response.json();
+      })
+      .then(data => {
+        this.addLog('Starting new hand...');
+      })
+      .catch(error => {
+        console.error('Error starting hand:', error);
+        this.addLog('Error starting hand: ' + error.message);
+      });
+    },
+    
+    getAvailableActions() {
+      if (!this.userCurrentSeat || !this.currentHand) return;
       
-      // Update dealer, small blind, big blind if needed
-      if (this.dealerSeat && this.dealerSeat.id === updatedSeat.id) {
-        this.dealerSeat = updatedSeat;
-      }
-      if (this.smallBlindSeat && this.smallBlindSeat.id === updatedSeat.id) {
-        this.smallBlindSeat = updatedSeat;
-      }
-      if (this.bigBlindSeat && this.bigBlindSeat.id === updatedSeat.id) {
-        this.bigBlindSeat = updatedSeat;
-      }
-      
-      // Add to log if relevant
-      if (updatedSeat.isOccupied) {
-        if (updatedSeat.currentBet) {
-          this.addToLog(`${updatedSeat.userName} bet $${updatedSeat.currentBet}`);
+      fetch(`/tables/${this.table.id}/hands/${this.currentHand}/actions`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         }
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to get available actions');
+        return response.json();
+      })
+      .then(data => {
+        console.log('Available actions:', data.actions);
+        this.availableActions = data.actions;
+        
+        // Initialize bet amount based on available actions
+        if (this.availableActions.includes('bet') || this.availableActions.includes('raise')) {
+          this.betAmount = Math.min(this.minBetAmount, this.currentPlayer?.balance || 0);
+        }
+      })
+      .catch(error => {
+        console.error('Error getting available actions:', error);
+        this.addLog('Error getting available actions: ' + error.message);
+      });
+    },
+    
+    takeAction(actionType, amount = 0) {
+      if (!this.userCurrentSeat || !this.currentHand) return;
+      
+      fetch(`/tables/${this.table.id}/hands/${this.currentHand}/actions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+          player_id: this.currentPlayer.id,
+          action: actionType,
+          amount: amount
+        })
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to take action');
+        return response.json();
+      })
+      .then(data => {
+        this.addLog(`You ${actionType}${amount > 0 ? ' $' + amount : ''}`);
+        this.isPlayerTurn = false;
+        this.availableActions = [];
+        
+        // Update seatActions to show the action immediately
+        if (this.userCurrentSeat) {
+          this.seatActions[this.userCurrentSeat.id] = {
+            type: actionType,
+            amount: amount
+          };
+        }
+      })
+      .catch(error => {
+        console.error('Error taking action:', error);
+        this.addLog('Error taking action: ' + error.message);
+      });
+    },
+    
+    // Event handlers
+    handleSeatUpdate(seatData) {
+      const seatIndex = this.seats.findIndex(s => s.id === seatData.id);
+      if (seatIndex !== -1) {
+        this.seats[seatIndex] = { ...this.seats[seatIndex], ...seatData };
+        
+        const action = seatData.isOccupied ? 'joined' : 'left';
+        this.addLog(`${seatData.userName || 'A player'} ${action} seat #${seatData.position}`);
       }
     },
     
     handleStatusUpdate(status) {
-      this.tableStatus = status;
-      this.addToLog(`Table status changed to ${status}`);
+      this.table.status = status;
+      this.addLog(`Table status changed to: ${status}`);
     },
     
     handleTurnChange(seatId) {
-      const seat = this.displaySeats.find(s => s.id === seatId);
-      this.activeSeat = seat;
+      this.currentTurnSeatId = seatId;
       
+      // Check if it's the current user's turn
+      if (this.userCurrentSeat && this.userCurrentSeat.id === seatId) {
+        this.isPlayerTurn = true;
+        this.getAvailableActions();
+        this.addLog('It\'s your turn!');
+      } else {
+        const seat = this.seats.find(s => s.id === seatId);
+        if (seat) {
+          this.addLog(`It's ${seat.userName}'s turn`);
+        }
+        this.isPlayerTurn = false;
+        this.availableActions = [];
+      }
+    },
+    
+    handleActionTaken(seatId, action, amount) {
+      const seat = this.seats.find(s => s.id === seatId);
       if (seat) {
-        this.addToLog(`It's ${seat.userName}'s turn`);
+        this.seatActions[seatId] = { type: action, amount: amount };
+        this.addLog(`${seat.userName} ${action}${amount > 0 ? ' $' + amount : ''}`);
+        
+        // Update pot
+        if (['bet', 'call', 'raise', 'allin'].includes(action) && amount > 0) {
+          this.currentPot += amount;
+        }
       }
     },
     
@@ -499,279 +566,133 @@ export default {
       this.currentRound = roundType;
       
       if (cards) {
-        this.communityCards = [...cards];
+        switch (roundType) {
+          case 'preflop':
+            this.addLog('Preflop round started');
+            break;
+          case 'flop':
+            this.community = cards.slice(0, 3);
+            this.addLog(`Flop: ${this.community.join(' ')}`);
+            break;
+          case 'turn':
+            this.community.push(cards[0]);
+            this.addLog(`Turn: ${cards[0]}`);
+            break;
+          case 'river':
+            this.community.push(cards[0]);
+            this.addLog(`River: ${cards[0]}`);
+            break;
+        }
       }
       
-      this.addToLog(`Round advanced to ${this.formatRound(roundType)}`);
-      
-      // Reset current bet for new betting round
-      this.currentBet = 0;
-      this.displaySeats.forEach(seat => {
-        if (seat.isOccupied) {
-          seat.currentBet = 0;
-        }
-      });
-    },
-    
-    handleHandFinished(handId, winners) {
-      this.winnerInfo = winners;
-      this.isPlaying = false;
-      
-      winners.forEach(winner => {
-        this.addToLog(`${winner.userName} won $${winner.amount} with ${winner.handName}`);
-      });
-      
-      // Update player cards to show all
-      this.displaySeats.forEach(seat => {
-        if (seat.isOccupied && seat.cards) {
-          seat.showCards = true;
-        }
-      });
+      // Reset seat actions for the new round
+      this.seatActions = {};
     },
     
     handleHandStarted(handId, data) {
-      this.currentHandId = handId;
-      this.isPlaying = true;
-      this.winnerInfo = null;
-      this.communityCards = [];
-      this.currentPot = 0;
-      this.currentBet = 0;
-      
-      // Reset all player cards
-      this.displaySeats.forEach(seat => {
-        if (seat.isOccupied) {
-          seat.cards = [];
-          seat.currentBet = 0;
-          seat.showCards = false;
-        }
-      });
-      
-      // Set dealer and blinds
-      const dealerSeat = this.displaySeats.find(s => s.id === data.dealer);
-      const smallBlindSeat = this.displaySeats.find(s => s.id === data.small_blind);
-      const bigBlindSeat = this.displaySeats.find(s => s.id === data.big_blind);
-      const nextToAct = this.displaySeats.find(s => s.id === data.next_to_act);
-      
-      this.dealerSeat = dealerSeat;
-      this.smallBlindSeat = smallBlindSeat;
-      this.bigBlindSeat = bigBlindSeat;
-      this.activeSeat = nextToAct;
+      this.currentHand = handId;
+      this.currentDealer = data.dealer;
       this.currentRound = 'preflop';
+      this.community = [];
+      this.playerCards = [];
+      this.seatActions = {};
+      this.currentPot = data.pot || 0;
       
-      // Simulate giving cards to others (in a real app, these would just be face down)
-      this.displaySeats.forEach(seat => {
-        if (seat.isOccupied) {
-          seat.cards = [{ value: '?', suit: '?' }, { value: '?', suit: '?' }];
+      // Reset UI state
+      this.isPlayerTurn = false;
+      this.availableActions = [];
+      
+      this.addLog(`Hand #${handId} started - Dealer seat #${data.dealer}`);
+      this.addLog(`Small blind: seat #${data.small_blind}, Big blind: seat #${data.big_blind}`);
+      
+      // Update player info after hand starts
+      if (this.userCurrentSeat) {
+        this.getCurrentPlayerInfo();
+      }
+    },
+    
+    handleHandFinished(handId, winners) {
+      this.addLog(`Hand #${handId} finished`);
+      
+      winners.forEach(winner => {
+        const seat = this.seats.find(s => s.id === winner.seat_id);
+        if (seat) {
+          this.addLog(`${seat.userName} won $${winner.amount}`);
         }
       });
       
-      this.addToLog(`Hand #${handId} started`);
-      if (dealerSeat) {
-        this.addToLog(`${dealerSeat.userName} is the dealer`);
+      // Reset state
+      this.currentHand = null;
+      this.currentTurnSeatId = null;
+      this.currentRound = null;
+      this.community = [];
+      this.playerCards = [];
+      this.seatActions = {};
+      this.currentPot = 0;
+      this.isPlayerTurn = false;
+      this.availableActions = [];
+      
+      // Update player info after hand finishes
+      if (this.userCurrentSeat) {
+        this.getCurrentPlayerInfo();
       }
     },
     
-    // Handle the new cards.dealt event
     handleCardsDealt(seatId, cards) {
-      // This event provides actual card values for a specific seat (should be the user's seat)
-      const seatIndex = this.displaySeats.findIndex(s => s.id === seatId);
-      
-      if (seatIndex !== -1) {
-        // Convert the cards format to match our UI format
-        const formattedCards = [];
-        
-        if (cards.card1) {
-          const value = cards.card1.charAt(0);
-          const suitCode = cards.card1.charAt(1);
-          const suit = this.convertSuitCode(suitCode);
-          formattedCards.push({ value, suit });
-        }
-        
-        if (cards.card2) {
-          const value = cards.card2.charAt(0);
-          const suitCode = cards.card2.charAt(1);
-          const suit = this.convertSuitCode(suitCode);
-          formattedCards.push({ value, suit });
-        }
-        
-        // Update the seat with the actual cards
-        this.displaySeats[seatIndex].cards = formattedCards;
-        
-        // If this is the current user's seat, log that they received cards
-        if (this.userCurrentSeat && this.userCurrentSeat.id === seatId) {
-          this.addToLog(`You received your cards: ${formattedCards.map(c => c.value + c.suit).join(', ')}`);
-        }
+      // Only process if the cards are for the current user
+      if (this.userCurrentSeat && this.userCurrentSeat.id === seatId) {
+        this.playerCards = [cards.card1, cards.card2];
+        this.addLog(`You received: ${cards.card1} ${cards.card2}`);
       }
     },
     
-    // Helper to convert suit code to actual suit symbol
-    convertSuitCode(code) {
-      const suitMap = {
-        's': '♠',
-        'h': '♥',
-        'd': '♦',
-        'c': '♣'
-      };
-      return suitMap[code.toLowerCase()] || code;
-    },
-    
-    formatGameType(gameType) {
-      if (gameType === 'TexasHoldem') return 'Texas Hold\'em';
-      return gameType;
-    },
-    
-    formatRound(round) {
-      if (!round) return 'Waiting';
+    // UI helpers
+    getSeatPositionStyle(position) {
+      // Calculate positions around the circular table
+      const maxSeats = this.table.maxSeats || 8; // Default to 8 if not specified
+      const angle = (position / maxSeats) * 2 * Math.PI;
+      const radius = 120; // in pixels
       
-      const rounds = {
-        'preflop': 'Pre-Flop',
-        'flop': 'Flop',
-        'turn': 'Turn',
-        'river': 'River',
-        'showdown': 'Showdown'
-      };
-      
-      return rounds[round] || round;
-    },
-    
-    positionSeat(position, totalSeats) {
-      // Calculate position around the table
-      const radius = 180; // Distance from center of table
-      const angle = ((position - 1) / totalSeats) * 2 * Math.PI;
-      const centerAdjustment = { x: 0, y: 20 }; // Adjust center point if needed
-      
-      const x = radius * Math.sin(angle) + centerAdjustment.x;
-      const y = -radius * Math.cos(angle) + centerAdjustment.y;
+      // Calculate position using trigonometry
+      const top = 50 + 40 * Math.sin(angle);
+      const left = 50 + 40 * Math.cos(angle);
       
       return {
-        transform: `translate(${x}px, ${y}px)`,
+        top: `${top}%`,
+        left: `${left}%`,
+        transform: 'translate(-50%, -50%)'
       };
     },
     
-    getSeatClass(seat) {
-      if (seat.isOccupied) {
-        if (this.isCurrentUser(seat)) {
-          return 'bg-blue-500 text-white';
-        }
-        return 'bg-gray-300 text-gray-800';
-      }
-      return 'bg-gray-200 text-gray-600';
-    },
-    
-    isCurrentUser(seat) {
-      return this.userCurrentSeat && this.userCurrentSeat.id === seat.id;
-    },
-    
-    joinSeat(seatId) {
-      useForm({}).post(route('seats.join', seatId), {
-        preserveScroll: true,
-        onSuccess: () => {
-          // Note: We don't need to update the UI here as we'll receive
-          // the update via the Pusher broadcast
-        }
-      });
-    },
-    
-    leaveSeat() {
-      if (!this.userCurrentSeat) return;
-      
-      useForm({}).post(route('seats.leave', this.userCurrentSeat.id), {
-        preserveScroll: true,
-        onSuccess: () => {
-          // Note: We don't need to update the UI here as we'll receive
-          // the update via the Pusher broadcast
-        }
-      });
-    },
-    
-    toggleTableStatus() {
-      // Update to use the new route
-      useForm({}).post(route('tables.toggle-status', this.table.id), {
-        preserveScroll: true,
-        onSuccess: () => {
-          // Note: We don't need to update the UI here as we'll receive
-          // the update via the Pusher broadcast
-        }
-      });
-    },
-    
-    startGame() {
-      useForm({}).post(route('tables.start-hand', this.table.id), {
-        preserveScroll: true,
-        onSuccess: () => {
-          // Game will be started via Pusher events
-        }
-      });
-    },
-    
-    startNewHand() {
-      useForm({}).post(route('tables.start-hand', this.table.id), {
-        preserveScroll: true,
-        onSuccess: () => {
-          // Hand will be started via Pusher events
-        }
-      });
-    },
-    
-    playerAction(action, amount = null) {
-      if (!this.isUserTurn) return;
-
-      const data = { action };
-      if (action === 'bet' && this.betAmount > 0) {
-        data.amount = this.betAmount;
-        this.showBetDialog = false;
-      }
-      if (action === 'call') {
-        data.amount = this.callAmount;
-      }
-
-      useForm(data).post(route('tables.action.process', this.table.id), {
-        preserveScroll: true,
-        onSuccess: () => {
-          // server will broadcast updates via Pusher
-          this.betAmount = 0;
-        }
-      });
-    },
-
-    fold() {
-      this.playerAction('fold');
-    },
-
-    check() {
-      this.playerAction('check');
-    },
-
-    call() {
-      this.playerAction('call');
-    },
-
-    openBetDialog() {
-      this.showBetDialog = true;
-      // set sensible defaults
-      this.betAmount = this.minBet;
-    },
-
-    closeBetDialog() {
-      this.showBetDialog = false;
-      this.betAmount = 0;
-    },
-
-    submitBet() {
-      if (this.betAmount < this.minBet || this.betAmount > this.maxBet) {
-        return; // you could show validation here
-      }
-      this.playerAction('bet');
-    },
-
-    addToLog(message) {
+    addLog(message) {
       const timestamp = new Date().toLocaleTimeString();
-      this.gameLogs.push({ time: timestamp, message });
-      // keep the log array to a reasonable size
-      if (this.gameLogs.length > 100) {
-        this.gameLogs.shift();
+      this.gameLogs.unshift(`[${timestamp}] ${message}`);
+      
+      // Keep log size manageable
+      if (this.gameLogs.length > 50) {
+        this.gameLogs = this.gameLogs.slice(0, 50);
       }
     }
-  },
-};
+  }
+});
 </script>
+
+<style scoped>
+.poker-table-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.seat {
+  width: 4rem;
+  height: 4rem;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 2px solid #333;
+}
+
+.poker-table {
+  position: relative;
+  height: 300px;
+}
+</style>
