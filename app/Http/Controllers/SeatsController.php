@@ -65,6 +65,7 @@ class SeatsController extends Controller
                 'user_id'       => $isAuth ? $userId : null,
                 'guest_name'    => $isAuth ? null : $userName,
                 'guest_session' => $isAuth ? null : $guestSessionId,
+                'balance'       => 100, #TODO let the host assign balance upon request
             ]);
     
             DB::afterCommit(function () use ($seat) {
@@ -74,7 +75,7 @@ class SeatsController extends Controller
             });
         });
         
-        return back()->with('success', 'You have successfully joined the table!');
+        return response()->json(['status' => 'success']);
     }
     
     /**
@@ -96,7 +97,7 @@ class SeatsController extends Controller
         }
         
         if (!$canLeave) {
-            return back()->with('error', 'You cannot leave a seat that is not yours.');
+            return response()->json(['error' => 'You cannot leave a seat that is not yours.'], 400);
         }
         
         // Use a transaction to ensure data integrity
@@ -113,6 +114,6 @@ class SeatsController extends Controller
             });
         });
         
-        return back()->with('success', 'You have left the table.');
+        return response()->json(['status' => 'success']);
     }
 }
