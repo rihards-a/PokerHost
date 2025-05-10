@@ -59,6 +59,7 @@ class RoundService
             case 'preflop':
                 return $this->checkPreflopFinish($round);
             case 'flop':
+                \Log::error('flop finish'); # debugging the round service getting triggered early.
                 return $this->checkFlopFinish($round);
             case 'turn':
                 return $this->checkTurnFinish($round);
@@ -77,7 +78,7 @@ class RoundService
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
         $previousNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
         $passive_actions = ['check', 'fold', 'call']; 
-        $prevAction = $nextSeatPreviousAction->action_type;
+        $prevAction = $nextSeatPreviousAction?->action_type;
 
         if (!$nextSeatPreviousAction || $prevAction === 'bet') { // in pre-flop, bet is considered passive, since only SB and BB buy-ins are possible bets
             return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
