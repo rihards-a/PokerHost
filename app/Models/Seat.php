@@ -24,21 +24,22 @@ class Seat extends Model
      * Get the next active seat in the table
      * @return Seat|null
      */
-    public function getNextActive() 
+    public function getNextActive()
     {
     // 1) Try to find the very next seat with a higher position
     $next = Seat::where('table_id', $this->table_id)
-    ->where('position', '>', $this->position)
-    ->whereHas('player', fn($q) => $q->where('active', true))
-    ->orderBy('position', 'asc')
-    ->first();
-
+        ->where('position', '>', $this->position)
+        ->whereHas('player', fn($q) => $q->where('active', true))
+        ->orderBy('position', 'asc')
+        ->first();
+    
     if ($next) {
         return $next;
     }
-
-    // 2) Wrap around: pick the *lowest* active seat (position 1 if occupied)
+    
+    // 2) Wrap around: pick the lowest active seat
     return Seat::where('table_id', $this->table_id)
+        ->where('position', '<', $this->position) // Ensure we only get positions lower than current
         ->whereHas('player', fn($q) => $q->where('active', true))
         ->orderBy('position', 'asc')
         ->first();
