@@ -60,7 +60,7 @@ class HandController extends Controller
                         ]));
                     }
                     broadcast(new HandStarted($table->id, $hand->id, [
-                        'dealer'       => $hand->dealer_seat_id,
+                        'dealer'       => Seat::find($hand->dealer_id)->position,
                         'small_blind'  => Seat::find($hand->small_blind_id)->position,
                         'big_blind'    => Seat::find($hand->big_blind_id)->position,
                         'next_to_act'  => 'remove', #TODO unnecessary
