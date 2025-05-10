@@ -484,15 +484,18 @@ export default defineComponent({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
         },
         body: JSON.stringify({
           player_id: this.currentPlayer.id,
-          action: actionType,
+          action_type: actionType,
           amount: amount
         })
       })
-      .then(response => {
+      .then(async response => {
+        const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error('Failed to take action');
         return response.json();
       })
@@ -533,7 +536,6 @@ export default defineComponent({
     
     handleTurnChange(seatId) {
       this.currentTurnSeatId = seatId;
-      
       // Check if it's the current user's turn
       if (this.userCurrentSeat && this.userCurrentSeat.id === seatId) {
         this.isPlayerTurn = true;
