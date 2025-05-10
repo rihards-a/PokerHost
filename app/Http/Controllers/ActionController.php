@@ -88,30 +88,44 @@ class ActionController extends Controller
                     broadcast(new HandFinished($table->id, $hand->id, $winners));
                 } else {
                     if ($roundFinished) {
+                        $community_cards = json_decode($hand->community_cards);
                         switch ($roundFinished->type) {
                             case 'preflop':
-                                $cards = array_slice($hand->community_cards, 0, 3);
+                                $cards = array_slice($community_cards, 0, 3);
                                 broadcast(new RoundAdvanced($table->id, $roundFinished->type, $cards));
                                 break;
                             case 'flop':
-                                $cards = array_slice($hand->community_cards, 3, 1);
+                                $cards = array_slice($community_cards, 3, 1);
                                 broadcast(new RoundAdvanced($table->id, $roundFinished->type, $cards));
                             case 'turn':
-                                $cards = array_slice($hand->community_cards, 4, 1);
+                                $cards = array_slice($community_cards, 4, 1);
                                 broadcast(new RoundAdvanced($table->id, $roundFinished->type, $cards));
                             case 'river':
                                 broadcast(new RoundAdvanced($table->id, $roundFinished->type));
                                 break;
                         }
                     }
-                    $nextSeat = $this->positionService->getCurrentSeat($hand)->getNextActive();
+                    $nextSeat = $this->positionService->getCurrentSeat($hand);
+                    #TODO BROADCAST ACTION TAKEN!!!
                     broadcast(new PlayerTurnChanged($table->id, $nextSeat->id));
                 }
             });
        
             return response()->json(['status' => 'success']);
         } catch (\Throwable $e) {
-            return response()->json(['error' => 'Failed to process action: ' . $e->getMessage()]);
+            // Log the error with full exception context
+            \Log::error('Failed to process action', [
+                'table_id'    => $table->id ?? null,
+                'hand_id'     => $hand->id ?? null,
+                'player_id'   => $currentSeat->player->id ?? null,
+                'action_type' => $actionType,
+                'amount'      => $amount,
+                'exception'   => $e,
+            ]);
+        
+            return response()->json([
+                'error' => 'Failed to process action: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -146,13 +160,14 @@ class ActionController extends Controller
 
     public function getOwnPlayerData(Request $request)
     {
+        $guestSessionId = $request->session()->getId();
+
         // Try authenticated user
         if (Auth::check()) {
             $player = Player::where('user_id', Auth::id())->first();
         }
         else {
             // Fallback to guest
-            $guestSessionId = $request->session()->getId();
             $player = $guestSessionId ? Player::where('guest_session', $guestSessionId)->first() : null;
         }
 
@@ -163,11 +178,12 @@ class ActionController extends Controller
 
         // Return only the specified attributes
         return response()->json([
-            'active'        => $player->active,
-            'balance'       => $player->balance ? $player->balance : 0,
-            'guest_name'    => $guestSessionId ? $player->guest_name : Auth::user()->name,
-            'guest_session' => $guestSessionId ? $player->guest_session : null,
-            'user_id'       => $guestSessionId ? $player->user_id : null,
+            'player' => [
+                'active'        => $player->active,
+                'balance'       => $player->balance ? $player->balance : 0,
+                'name'          => $guestSessionId ? $player->guest_name : Auth::user()->name,
+                'id'            => $player->id,
+            ]
         ], 200);
     }
 }
