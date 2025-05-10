@@ -28,13 +28,16 @@ class ActionService
         $lastAction = $this->positionService->getLastAction($hand);
 
         // Validate action based on the current game state
-        if ($amount > $player->balance || $amount <= 0) {
+        if ($amount > $player->balance || $amount < 0) {
             throw new \Exception('Insufficient balance for this action.');
         }
         switch ($actionType) {
             case 'bet':
                 if ($lastAction && $lastAction->action_type !== 'check') {
                     throw new \Exception('Invalid - you can only bet if no one has acted yet.');
+                }
+                if ($amount == 0) {
+                    throw new \Exception('Insufficient balance for this action.');
                 }
                 break;
             case 'call':
