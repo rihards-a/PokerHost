@@ -60,7 +60,7 @@ class Seat extends Model
         return $this->hasMany(SeatHand::class);
     }
 
-    public function action()
+    public function actions()
     {
         return $this->hasMany(Action::class);
     }
