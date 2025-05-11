@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Table;
 use App\Models\Seat;
 use App\Services\HandService;
+use App\Services\ActionService;
 use App\Events\HandStarted;
 use App\Events\PlayerTurnChanged;
 use App\Events\PlayerCardsDealt;
@@ -15,11 +16,12 @@ use Inertia\Inertia;
 
 class HandController extends Controller
 {
-    protected $handService;
+    protected $handService, $actionService;
 
-    public function __construct(HandService $handService)
+    public function __construct(HandService $handService, ActionService $actionService)
     {
         $this->handService = $handService;
+        $this->actionService = $actionService;
     }
 
     /**
@@ -41,7 +43,7 @@ class HandController extends Controller
             DB::transaction(function () use ($table, $occupiedSeats, &$hand) {
                 $hand = $this->handService->initializeHand($table, $occupiedSeats);
 
-                $hand->rounds()->create([
+                $round = $hand->rounds()->create([
                     'type' => 'preflop',
                     'is_complete' => false,
                 ]);
@@ -51,8 +53,14 @@ class HandController extends Controller
                     $seat->refresh();
                     $seat->load('seatHand');
                 });
+
+                // Bet for SB and BB
+                $SB = Seat::with('player')->find($hand->small_blind_id);
+                $BB = Seat::with('player')->find($hand->big_blind_id);
+                $this->actionService->betSBandBB($hand, $round, $SB, 1); #TODO make $amount depend on table settings - add new columns
+                $this->actionService->betSBandBB($hand, $round, $BB, 2); #TODO make sure this is only done when player balance > 2
     
-                DB::afterCommit(function () use ($table, $occupiedSeats, $hand) {
+                DB::afterCommit(function () use ($table, $occupiedSeats, $hand, $SB, $BB) {
                     foreach ($occupiedSeats as $seat) {
                         broadcast(new PlayerCardsDealt($table->id, $seat->id, [
                             'card1' => $seat->seatHand->first()->card1,
@@ -61,9 +69,8 @@ class HandController extends Controller
                     }
                     broadcast(new HandStarted($table->id, $hand->id, [
                         'dealer'       => Seat::find($hand->dealer_id)->position,
-                        'small_blind'  => Seat::find($hand->small_blind_id)->position,
-                        'big_blind'    => Seat::find($hand->big_blind_id)->position,
-                        'next_to_act'  => 'remove', #TODO unnecessary
+                        'small_blind'  => $SB->position,
+                        'big_blind'    => $BB->position,
                     ]));
                     
                     $nextToAct = $table->occupiedSeats->find($hand->big_blind_id)->getNextActive()->id;
