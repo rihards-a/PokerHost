@@ -11,33 +11,20 @@ class PositionService
      */
     public function getCurrentSeat($hand)
     {
+        // 1) find the starting seat
+        $last = $this->getLastAction($hand);
+        $start = $last ? $last->load('seat')->seat->getNextActive()
+               : Seat::with('player')->find($hand->dealer_id)->getNextActive(); // pre-flop - no last actions
+    
+        // 2) walk the circle until we either find an active SeatHand, or come full-circle
+        $current = $start;
+        do {
+            $seatHand = $current->seatHand()->where('hand_id', $hand->id)->latest()->first();
+            if ($seatHand && $seatHand->status === 'active') return $current;
+            $current = $current->getNextActive();
+        } while ($current->id !== $start->id);
         
-        # TODO this doesn't work as a substitute for some reason????
-        
-        $lastAction = $this->getLastAction($hand);
-        $lastAction?->load('seat');
-        return $lastAction ? $lastAction->seat->getNextActive() : Seat::with('player')->find($hand->big_blind_id); // no action taken yet - preflop
-        
-        /*
-        $activeSeatHands = $hand->seatHands()->where('status', 'active')->with('seat.player')->get(); // loading in player for getNextActive()
-
-        $lastAction = $this->getLastAction($hand);
-        $lastSeat = $lastAction ? $lastAction->seat_id : $hand->big_blind_id; #TODO Won't work for 2 players
-
-        foreach ($activeSeatHands as $seatHand) {
-            if ($seatHand->seat_id === $lastSeat) { #TODO if last seat went allin, it won't be active and won't be found in activeseathands
-                return $seatHand->seat->getNextActive();
-            }
-        }
-        
-        \Log::warning('Last seat not found among active seats', [
-            'hand_id' => $hand->id,
-            'last_seat_id' => $lastSeat,
-            'active_seat_ids' => $activeSeatHands->pluck('seat_id')->toArray()
-        ]);
-        // If no active seat hands are found, return null
         return null;
-        */
     }
 
     public function getLastRound($hand)
@@ -51,6 +38,7 @@ class PositionService
     public function getLastAction($hand)
     {
         $lastRound = $this->getLastRound($hand);
-        return $lastRound ? $lastRound->actions()->latest()->first() : null;
+        // orderBy twice to separate SB and BB - they get committed at the same time, but have an incremented ID
+        return $lastRound ? $lastRound->actions()->orderBy('created_at', 'desc')->orderBy('id', 'desc')->first() : null;
     }
 }
