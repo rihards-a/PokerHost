@@ -57,14 +57,17 @@ class RoundService
     {
         switch ($round->type) {
             case 'preflop':
+                \Log::error('preflop finish check...'); # debugging the round service getting triggered early.
                 return $this->checkPreflopFinish($round);
             case 'flop':
-                \Log::error('flop finish'); # debugging the round service getting triggered early.
+                \Log::error('flop finish check...'); # debugging the round service getting triggered early.
                 return $this->checkFlopFinish($round);
             case 'turn':
-                return $this->checkTurnFinish($round);
+                \Log::error('turn finish check...');
+                return $this->checkFlopFinish($round);
             case 'river':
-                return $this->checkRiverFinish($round);
+                \Log::error('river finish check...');
+                return $this->checkFlopFinish($round);
             default:
                 throw new \Exception('Invalid round type.');
         }
@@ -73,96 +76,69 @@ class RoundService
     protected function checkPreflopFinish($round) 
     {
         $round->load('hand');
-        $currentSeat = $this->positionService->getCurrentSeat($round->hand);
-        $nextSeat = $currentSeat->getNextActive(); // tracks by seatHand status - allin's excluded
+        $nextSeat = $this->positionService->getCurrentSeat($round->hand); // next to act
+        if (!$nextSeat) { // no one is active - do rundown???
+            $round->update(['is_complete' => true]);
+            \Log::debug('preflop has finished! - no current seat');
+            return $round->is_complete;
+        }
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
-        $previousNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
+        $latestNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
         $passive_actions = ['check', 'fold', 'call']; 
         $prevAction = $nextSeatPreviousAction?->action_type;
 
-        if (!$nextSeatPreviousAction || $prevAction === 'bet') { // in pre-flop, bet is considered passive, since only SB and BB buy-ins are possible bets
+        if ($prevAction === $latestNonpassiveAction) { // only one player who's active is left
+            $round->update(['is_complete' => true]);
+            \Log::debug('preflop has finished! - previous action was done by the same player');
+            return $round->is_complete;
+        }
+
+        if (!$nextSeatPreviousAction || $prevAction === 'bet') { // SB and BB automatically make a bet at the start of preflop
             return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
         }
 
-        if ($previousNonpassiveAction && (in_array($prevAction, $passive_actions)) || // next seats move was passive
-            ($prevAction === 'raise' && $previousNonpassiveAction->amount > $nextSeatPreviousAction->amount)) { // next seat got re-raised
+        if ($latestNonpassiveAction->amount > $nextSeatPreviousAction->amount) { // next seat got re-raised
                 return false;
         }
 
         // everyone has played a passive action in the last lap of the round
         $round->update(['is_complete' => true]);
+        \Log::debug('preflop has finished! - normal');
         return $round->is_complete;
     }
 
     protected function checkFlopFinish($round) 
     {
         $round->load('hand');
-        $currentSeat = $this->positionService->getCurrentSeat($round->hand);
-        $nextSeat = $currentSeat->getNextActive(); // tracks by seatHand status - allin's excluded
+        $nextSeat = $this->positionService->getCurrentSeat($round->hand); // next to act
+        if (!$nextSeat) { // no one is active - do rundown???
+            $round->update(['is_complete' => true]);
+            \Log::debug('post flop has finished! - no current seat');
+            return $round->is_complete;
+        }
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
-        $previousNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
+        $latestNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
         $passive_actions = ['check', 'fold', 'call']; 
-        $prevAction = $nextSeatPreviousAction->action_type;
+        $prevAction = $nextSeatPreviousAction?->action_type;
+
+        if ($prevAction && $prevAction === $latestNonpassiveAction) { // only one player who's active is left
+            $round->update(['is_complete' => true]);
+            \Log::debug('post flop has finished! - previous action was done by the same player');
+            return $round->is_complete;
+        }
 
         if (!$nextSeatPreviousAction) {
             return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
         }
 
-        if ($previousNonpassiveAction && (in_array($prevAction, $passive_actions)) || // next seats move was passive
-            ($prevAction === 'raise' && $previousNonpassiveAction->amount > $nextSeatPreviousAction->amount)) { // next seat got re-raised
+        if ($latestNonpassiveAction && $latestNonpassiveAction->amount > $nextSeatPreviousAction->amount) { // next seat got re-raised
                 return false;
         }
 
-        // everyone has played a passive action in the last lap of the round
-        $round->update(['is_complete' => true]);
-        return $round->is_complete;
-    }
-
-    protected function checkTurnFinish($round) 
-    {
-        $round->load('hand');
-        $currentSeat = $this->positionService->getCurrentSeat($round->hand);
-        $nextSeat = $currentSeat->getNextActive(); // tracks by seatHand status - allin's excluded
-        $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
-        $previousNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
-        $passive_actions = ['check', 'fold', 'call']; 
-        $prevAction = $nextSeatPreviousAction->action_type;
-
-        if (!$nextSeatPreviousAction) {
-            return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
-        }
-
-        if ($previousNonpassiveAction && (in_array($prevAction, $passive_actions)) || // next seats move was passive
-            ($prevAction === 'raise' && $previousNonpassiveAction->amount > $nextSeatPreviousAction->amount)) { // next seat got re-raised
-                return false;
-        }
 
         // everyone has played a passive action in the last lap of the round
         $round->update(['is_complete' => true]);
-        return $round->is_complete;
-    }
-
-    protected function checkRiverFinish($round) 
-    {
-        $round->load('hand');
-        $currentSeat = $this->positionService->getCurrentSeat($round->hand);
-        $nextSeat = $currentSeat->getNextActive(); // tracks by seatHand status - allin's excluded
-        $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
-        $previousNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
-        $passive_actions = ['check', 'fold', 'call']; 
-        $prevAction = $nextSeatPreviousAction->action_type;
-
-        if (!$nextSeatPreviousAction) {
-            return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
-        }
-
-        if ($previousNonpassiveAction && (in_array($prevAction, $passive_actions)) || // next seats move was passive
-            ($prevAction === 'raise' && $previousNonpassiveAction->amount > $nextSeatPreviousAction->amount)) { // next seat got re-raised
-                return false;
-        }
-
-        // everyone has played a passive action in the last lap of the round
-        $round->update(['is_complete' => true]);
+        \Log::debug('post flop has finished! - normal');
         return $round->is_complete;
     }
 
@@ -188,8 +164,12 @@ class RoundService
      */
     public function getActiveSeatHandsCount($round)
     {
-        $round->load('hand.table.occupiedSeats');
-        $occupiedSeats = $round->hand->table->occupiedSeats->where('status', 'active');
+        $round->load('hand.table.seats.player');
+        
+        $occupiedSeats = $round->hand->table->occupiedSeats()
+            ->whereHas('player', function($q) {
+                $q->where('active', true); // player is active
+            })->get();
         return $occupiedSeats->map(function ($seat) { // gets the amount of active seat hands in the round who haven't folded or allined yet
             return $seat->seatHand()->where('status', 'active')->first();
         })->count();
