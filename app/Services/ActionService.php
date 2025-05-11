@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\seatHand;
 use App\Models\Action;
+use App\Models\Seat;
 
 class ActionService
 {
@@ -24,8 +25,10 @@ class ActionService
     #TODO add tracker for has_checked and has_bet ?
     public function processAction($hand, $currentSeat, $actionType, $amount) {
         $player = $currentSeat->player;
+        $round = $this->positionService->getLastRound($hand);
         $seatHand = seatHand::where('hand_id', $hand->id)->where('seat_id', $currentSeat->id)->first();
-        $lastAction = $this->positionService->getLastAction($hand);
+        // $lastAction = $this->positionService->getLastAction($hand);
+        $previousNonPassiveAction = $this->roundService->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
 
         // Validate action based on the current game state
         if ($amount > $player->balance || $amount < 0) {
@@ -33,25 +36,40 @@ class ActionService
         }
         switch ($actionType) {
             case 'bet':
-                if ($lastAction && $lastAction->action_type !== 'check') {
-                    throw new \Exception('Invalid - you can only bet if no one has acted yet.');
+                if ($previousNonPassiveAction) {
+                    throw new \Exception('Invalid - you can only bet if no one has acted yet.'); #TODO change these exceptions to responses for incorrect POST requests
                 }
                 if ($amount == 0) {
                     throw new \Exception('Insufficient balance for this action.');
                 }
                 break;
             case 'call':
-                if (!$lastAction || $amount !== $lastAction->amount) {
-                    throw new \Exception('Invalid call amount - must be equal to the previous amount.'); 
+                if (!$previousNonPassiveAction) {
+                    throw new \Exception('Invalid call - can only happen after an agressive action.'); 
                     // Otherwise it's an all-in or first move - which is a check or bet
                 }
+                $amount = $previousNonPassiveAction->amount;
                 break;
             case 'raise':
-                if ($amount < $lastAction->amount * 2) {
+                if (!$previousNonPassiveAction) {
+                    throw new \Exception('Invalid - you can only raise if someone has acted.');
+                }
+                if ($amount < $previousNonPassiveAction->amount * 2) {
                     throw new \Exception('Invalid raise amount - must be at least double the current bet.');
                 }
                 break;
             case 'check':
+                if ($round->type === 'preflop') {
+                    $BB = Seat::find($hand->big_blind_id)->id;
+                    if ($BB === $currentSeat->id) {
+                        if ($currentSeat->actions()->count() === 1) { // if BB has not made an action since the bet, he can check out
+                            $amount = 0; // No amount is needed for a check
+                            break;
+                        }
+                    }
+                } else if ($previousNonPassiveAction) {
+                    throw new \Exception('Invalid - you can only check if noone has acted.');
+                }
                 $amount = 0; // No amount is needed for a check
                 break;
             case 'fold':
@@ -67,7 +85,7 @@ class ActionService
         }
 
         // Process the action and update the game state accordingly
-        Action::create([
+        $action = Action::create([
             'round_id' => $this->positionService->getLastRound($hand)->id,
             'seat_id' => $currentSeat->id,
             'action_type' => $actionType,
@@ -77,6 +95,8 @@ class ActionService
         if ($actionType !== 'fold' || $actionType !== 'check') {
             $this->transactionService->betTransaction($hand, $player, $amount);
         }
+
+        return $action;
     }
 
     public function getAvailableActions($hand, $currentPlayer) {
@@ -91,9 +111,19 @@ class ActionService
             $availableActions[] = 'check';
         } else {
             $nonpassiveAmount = $this->getTotalBetAmountForCurrentSeatThisRound($nonpassiveAction->seat->id, $round);
-            if ($nonpassiveAmount < $currentAmount + $currentPlayer->balance) {
+            if (($nonpassiveAmount < $currentAmount + $currentPlayer->balance) && ($nonpassiveAmount != $currentAmount)) {
                 $availableActions[] = 'call';
+            }
+            if ($nonpassiveAmount <= ($currentAmount + $currentPlayer->balance) / 2) {                
                 $availableActions[] = 'raise';
+            }
+            if ($this->positionService->getLastRound($hand)->type === 'preflop') { // edge case: BB on preflop can check on first lap
+                $BB = Seat::find($hand->big_blind_id)->id;
+                    if ($BB === $currentSeat->id) {
+                        if ($currentSeat->actions()->count() === 1) {
+                            $availableActions[] = 'check';
+                        }
+                    }
             }
         }
 
@@ -105,5 +135,15 @@ class ActionService
         ->actions()
         ->where('seat_id', $seatId)
         ->sum('amount');
+    }
+
+    public function betSBandBB($hand, $round, $seat, $amount) {
+        Action::create([
+            'round_id' => $round->id,
+            'seat_id' => $seat->id,
+            'action_type' => 'bet',
+            'amount' => $amount,
+        ]);
+        $this->transactionService->betTransaction($hand, $seat->player, $amount);
     }
 }
