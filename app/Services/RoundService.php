@@ -78,6 +78,7 @@ class RoundService
         $round->load('hand');
         $nextSeat = $this->positionService->getCurrentSeat($round->hand); // next to act
         if (!$nextSeat) { // no one is active - do rundown???
+            $round->hand->update(['is_complete' => true]);
             $round->update(['is_complete' => true]);
             \Log::debug('preflop has finished! - no current seat');
             return $round->is_complete;
@@ -88,6 +89,7 @@ class RoundService
         $prevAction = $nextSeatPreviousAction?->action_type;
 
         if ($prevAction === $latestNonpassiveAction) { // only one player who's active is left
+            $round->hand->update(['is_complete' => true]);
             $round->update(['is_complete' => true]);
             \Log::debug('preflop has finished! - previous action was done by the same player');
             return $round->is_complete;
@@ -112,6 +114,7 @@ class RoundService
         $round->load('hand');
         $nextSeat = $this->positionService->getCurrentSeat($round->hand); // next to act
         if (!$nextSeat) { // no one is active - do rundown???
+            $round->hand->update(['is_complete' => true]);
             $round->update(['is_complete' => true]);
             \Log::debug('post flop has finished! - no current seat');
             return $round->is_complete;
@@ -122,6 +125,7 @@ class RoundService
         $prevAction = $nextSeatPreviousAction?->action_type;
 
         if ($prevAction && $prevAction === $latestNonpassiveAction) { // only one player who's active is left
+            $round->hand->update(['is_complete' => true]);
             $round->update(['is_complete' => true]);
             \Log::debug('post flop has finished! - previous action was done by the same player');
             return $round->is_complete;
