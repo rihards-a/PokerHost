@@ -27,8 +27,9 @@ class ActionService
         $player = $currentSeat->player;
         $round = $this->positionService->getLastRound($hand);
         $seatHand = seatHand::where('hand_id', $hand->id)->where('seat_id', $currentSeat->id)->first();
-        // $lastAction = $this->positionService->getLastAction($hand);
+        $currentAmount = $this->getTotalBetAmountForCurrentSeatThisRound($currentSeat->id, $round);
         $previousNonPassiveAction = $this->roundService->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
+        $previousTotalAmount = $previousNonPassiveAction ? $this->getTotalBetAmountForCurrentSeatThisRound($previousNonPassiveAction->seat()->first()->id, $round) : 0;
 
         // Validate action based on the current game state
         if ($amount > $player->balance || $amount < 0) {
@@ -48,13 +49,13 @@ class ActionService
                     throw new \Exception('Invalid call - can only happen after an agressive action.'); 
                     // Otherwise it's an all-in or first move - which is a check or bet
                 }
-                $amount = $previousNonPassiveAction->amount;
+                $amount = $previousTotalAmount - $currentAmount;
                 break;
             case 'raise':
                 if (!$previousNonPassiveAction) {
                     throw new \Exception('Invalid - you can only raise if someone has acted.');
                 }
-                if ($amount < $previousNonPassiveAction->amount * 2) {
+                if ($amount + $currentAmount < $previousTotalAmount * 2) {
                     throw new \Exception('Invalid raise amount - must be at least double the current bet.');
                 }
                 break;
@@ -138,12 +139,13 @@ class ActionService
     }
 
     public function betSBandBB($hand, $round, $seat, $amount) {
-        Action::create([
+        $action = Action::create([
             'round_id' => $round->id,
             'seat_id' => $seat->id,
             'action_type' => 'bet',
             'amount' => $amount,
         ]);
         $this->transactionService->betTransaction($hand, $seat->player, $amount);
+        return $action;
     }
 }
