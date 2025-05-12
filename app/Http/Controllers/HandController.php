@@ -7,6 +7,7 @@ use App\Models\Seat;
 use App\Services\HandService;
 use App\Services\ActionService;
 use App\Events\HandStarted;
+use App\Events\ActionTaken;
 use App\Events\PlayerTurnChanged;
 use App\Events\PlayerCardsDealt;
 use Illuminate\Http\Request;
@@ -57,10 +58,10 @@ class HandController extends Controller
                 // Bet for SB and BB
                 $SB = Seat::with('player')->find($hand->small_blind_id);
                 $BB = Seat::with('player')->find($hand->big_blind_id);
-                $this->actionService->betSBandBB($hand, $round, $SB, 1); #TODO make $amount depend on table settings - add new columns
-                $this->actionService->betSBandBB($hand, $round, $BB, 2); #TODO make sure this is only done when player balance > 2
+                $SB_A = $this->actionService->betSBandBB($hand, $round, $SB, 1); #TODO make $amount depend on table settings - add new columns
+                $BB_A = $this->actionService->betSBandBB($hand, $round, $BB, 2); #TODO make sure this is only done when player balance > 2
     
-                DB::afterCommit(function () use ($table, $occupiedSeats, $hand, $SB, $BB) {
+                DB::afterCommit(function () use ($table, $occupiedSeats, $hand, $SB, $BB, $SB_A, $BB_A) {
                     foreach ($occupiedSeats as $seat) {
                         broadcast(new PlayerCardsDealt($table->id, $seat->id, [
                             'card1' => $seat->seatHand->first()->card1,
@@ -73,6 +74,8 @@ class HandController extends Controller
                         'big_blind'    => $BB->position,
                     ]));
                     
+                    broadcast(new ActionTaken($table->id, $SB_A));
+                    broadcast(new ActionTaken($table->id, $BB_A));
                     $nextToAct = $table->occupiedSeats->find($hand->big_blind_id)->getNextActive()->id;
                     broadcast(new PlayerTurnChanged($table->id, $nextToAct));
                 });
