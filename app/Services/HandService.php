@@ -109,6 +109,12 @@ class HandService
             $loser['seat_hand']->update([
                 'status' => 'busted',
             ]);
+            $player = $loser['player'];
+            if ($player->balance < 1) {
+                $player->update([
+                    'active' => false,
+                ]);
+            }
         }
 
         #TODO show the cards of players who won
