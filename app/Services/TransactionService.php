@@ -29,6 +29,7 @@ class TransactionService
         $splitAmount = $pot / count($winners);
         $remainder = $pot % count($winners);
         foreach ($winners as $winner) {
+            $winner = $winner['player'];
             $amount = $splitAmount + ($remainder > 0 ? 1 : 0);
             $winner->increment('balance', $amount);
             $winner->transactions()->create([
