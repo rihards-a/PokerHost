@@ -82,6 +82,7 @@ class ActionController extends Controller
                     $this->roundService->createNextRound($hand);
        
                     // Finalize the hand if the status is complete
+                    $hand->refresh();
                     if ($hand->is_complete) {
                         $winners = $this->handService->finalizeHand($hand);
                     }
