@@ -6,6 +6,7 @@ use Illuminate\Support\Collection;
 use App\Models\Hand;
 use App\Models\SeatHand;
 use App\Models\Table;
+use App\Models\Seat;
 
 class HandService
 {
@@ -32,13 +33,16 @@ class HandService
         $deck = $this->createShuffledDeck();
         */
 
+        // Incrementing dealer offset based off of table hand count - only for the first hand
+        list($dealerId, $smallBlindId, $bigBlindId) = $this->calculateDealerSBBB($table, $occupiedSeats);
+
         // Deal cards to the table. Determine dealer, small blind, and big blind
         $hand = Hand::create([
             'table_id' => $table->id,
             'community_cards' => json_encode(["Ah", "Kd", "Qs", "Jc", "9h"]), #TODO create a deck and shuffle - make sure users cannot see this or deal it incrementally
-            'dealer_id' => $occupiedSeats->first()->id, #TODO maybe use a dealer offset and then skip 'offset % count'
-            'small_blind_id' => $occupiedSeats->find($occupiedSeats->first()->id)->getNextActive()->id,
-            'big_blind_id' => $occupiedSeats->find($occupiedSeats->first()->id)->getNextActive()->getNextActive()->id, #TODO edge case if only 2 players
+            'dealer_id' => $dealerId,
+            'small_blind_id' => $smallBlindId,
+            'big_blind_id' => $bigBlindId, #TODO edge case if only 2 players
             'is_complete' => false,
             'pot_size' => 0,
         ]);
@@ -99,8 +103,16 @@ class HandService
         });
         $losers = array_values($losers); // Re-index the array to account for missing values
 
+        $winners_API = [];
         // Update seatHand status - win or bust
         foreach ($winners as $winner) {
+            $winners_API += [
+                'seat_id' => $winner['seat_id'],
+                'hand_rank' => $winner['hand_rank'],
+                'amount' => $winner['player']->transactions()->latest()->first(),
+                'card1' => $winner['seat_hand']->card1,
+                'card2' => $winner['seat_hand']->card2,
+            ];
             $winner['seat_hand']->update([
                 'status' => 'won',
             ]);
@@ -119,6 +131,21 @@ class HandService
 
         #TODO show the cards of players who won
 
-        return $winners;
+        return $winners_API;
+    }
+
+    protected function calculateDealerSBBB(Table $table, Collection $occupiedSeats) {
+        $offset = $table->hands()->count() % $table->max_seats;
+        if ($offset > 0 && count($occupiedSeats) > 0) {
+            $offset = $offset % count($occupiedSeats);
+            $occupiedSeats = $occupiedSeats
+                ->slice($offset)                          // seats at positions [$offset .. end]
+                ->concat($occupiedSeats->slice(0, $offset)) // then seats [0 .. $offset-1]
+                ->values();   
+        }
+        $dealer = $occupiedSeats->first();
+        $SB = $dealer->getNextActive();
+        $BB = $SB->getNextActive();
+        return [$dealer->id, $SB->id, $BB->id];
     }
 }
