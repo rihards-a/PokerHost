@@ -62,7 +62,7 @@ class ActionService
             case 'check':
                 if ($round->type === 'preflop') {
                     $BB = Seat::find($hand->big_blind_id)->id;
-                    if ($BB === $currentSeat->id) {
+                    if ($BB === $currentSeat->id && $previousTotalAmount == $currentAmount) { // current amount depends on SB and BB sizes per table
                         if ($currentSeat->actions()->count() === 1) { // if BB has not made an action since the bet, he can check out
                             $amount = 0; // No amount is needed for a check
                             break;
