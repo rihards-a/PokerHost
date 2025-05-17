@@ -85,23 +85,24 @@ class RoundService
         }
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
         $latestNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
-        $passive_actions = ['check', 'fold', 'call']; 
-        $prevAction = $nextSeatPreviousAction?->action_type;
 
-        if ($prevAction === $latestNonpassiveAction) { // only one player who's active is left
-            $round->hand->update(['is_complete' => true]);
-            $round->update(['is_complete' => true]);
-            \Log::debug('preflop has finished! - previous action was done by the same player');
-            return $round->is_complete;
-        }
-
-        if (!$nextSeatPreviousAction || $prevAction === 'bet') { // SB and BB automatically make a bet at the start of preflop
+        if (!$nextSeatPreviousAction) {
             return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
         }
 
-        if ($latestNonpassiveAction->amount > $nextSeatPreviousAction->amount) { // next seat got re-raised
-                return false;
+        if ($nextSeatPreviousAction->id === $latestNonpassiveAction->id) { // only one player who's active is left
+            if ($nextSeatPreviousAction->action_type === 'bet') { // SB and BB automatically make a bet at the start of preflop
+                return false; // in this case latest non passive can only be BB because he goes after SB
+            }
+            $round->hand->update(['is_complete' => true]);
+            $round->update(['is_complete' => true]);
+            \Log::debug('preflop has finished! - previous action was done by the player who is next');
+            return $round->is_complete;
         }
+
+        $amount1 = $this->getTotalBetAmountForCurrentSeatThisRound($latestNonpassiveAction->seat->id, $round);
+        $amount2= $this->getTotalBetAmountForCurrentSeatThisRound($nextSeatPreviousAction->seat->id, $round);
+        if ($amount1 > $amount2) return false; // next seat got re-raised
 
         // everyone has played a passive action in the last lap of the round
         $round->update(['is_complete' => true]);
@@ -121,24 +122,23 @@ class RoundService
         }
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
         $latestNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
-        $passive_actions = ['check', 'fold', 'call']; 
-        $prevAction = $nextSeatPreviousAction?->action_type;
 
-        if ($prevAction && $prevAction === $latestNonpassiveAction) { // only one player who's active is left
+        if (!$nextSeatPreviousAction) {
+            return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
+        }
+
+        if ($nextSeatPreviousAction === $latestNonpassiveAction) { // only one player who's active is left
             $round->hand->update(['is_complete' => true]);
             $round->update(['is_complete' => true]);
             \Log::debug('post flop has finished! - previous action was done by the same player');
             return $round->is_complete;
         }
 
-        if (!$nextSeatPreviousAction) {
-            return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
+        if ($latestNonpassiveAction) { // next seat got re-raised
+            $amount1 = $this->getTotalBetAmountForCurrentSeatThisRound($latestNonpassiveAction->seat->id, $round);
+            $amount2= $this->getTotalBetAmountForCurrentSeatThisRound($nextSeatPreviousAction->seat->id, $round);
+            if ($amount1 > $amount2) return false;
         }
-
-        if ($latestNonpassiveAction && $latestNonpassiveAction->amount > $nextSeatPreviousAction->amount) { // next seat got re-raised
-                return false;
-        }
-
 
         // everyone has played a passive action in the last lap of the round
         $round->update(['is_complete' => true]);
@@ -205,5 +205,12 @@ class RoundService
         }
         
         return $most_significant_action;
+    }
+    
+    public function getTotalBetAmountForCurrentSeatThisRound($seatId, $round) {
+        return (int) $round
+        ->actions()
+        ->where('seat_id', $seatId)
+        ->sum('amount');
     }
 }
