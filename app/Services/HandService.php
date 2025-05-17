@@ -6,7 +6,7 @@ use Illuminate\Support\Collection;
 use App\Models\Hand;
 use App\Models\SeatHand;
 use App\Models\Table;
-use App\Models\Seat;
+use App\Models\Action;
 
 class HandService
 {
@@ -106,10 +106,16 @@ class HandService
         $winners_API = [];
         // Update seatHand status - win or bust
         foreach ($winners as $winner) {
-            $winners_API += [
+            $roundIds = $hand->rounds->pluck('id');
+            $won = $winner['player']->transactions()->latest()->first()->amount;
+            $spent = Action::whereIn('round_id', $roundIds)
+                ->where('seat_id', $winner['seat_id'])
+                ->sum('amount');
+            $profit = $won - $spent;
+            $winners_API[] = [
                 'seat_id' => $winner['seat_id'],
                 'hand_rank' => $winner['hand_rank'],
-                'amount' => $winner['player']->transactions()->latest()->first(),
+                'amount' => $profit,
                 'card1' => $winner['seat_hand']->card1,
                 'card2' => $winner['seat_hand']->card2,
             ];
