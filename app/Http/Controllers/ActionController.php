@@ -147,7 +147,7 @@ class ActionController extends Controller
      */
     public function getAvailableActions(Table $table, Hand $hand)
     {
-        $currentSeatPlayer = $this->positionService->getCurrentSeat($hand)->player;
+        $currentSeatPlayer = $this->positionService->getCurrentSeat($hand)?->player;
 
         if (!$currentSeatPlayer || !$currentSeatPlayer->active) {
             return response()->json(['error' => 'Invalid player turn.'], 400);
