@@ -27,9 +27,9 @@ class ActionService
         $player = $currentSeat->player;
         $round = $this->positionService->getLastRound($hand);
         $seatHand = seatHand::where('hand_id', $hand->id)->where('seat_id', $currentSeat->id)->first();
-        $currentAmount = $this->getTotalBetAmountForCurrentSeatThisRound($currentSeat->id, $round);
+        $currentAmount = $this->roundService->getTotalBetAmountForCurrentSeatThisRound($currentSeat->id, $round);
         $previousNonPassiveAction = $this->roundService->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
-        $previousTotalAmount = $previousNonPassiveAction ? $this->getTotalBetAmountForCurrentSeatThisRound($previousNonPassiveAction->seat()->first()->id, $round) : 0;
+        $previousTotalAmount = $previousNonPassiveAction ? $this->roundService->getTotalBetAmountForCurrentSeatThisRound($previousNonPassiveAction->seat()->first()->id, $round) : 0;
 
         // Validate action based on the current game state
         if ($amount > $player->balance || $amount < 0) {
@@ -105,23 +105,24 @@ class ActionService
         $availableActions = ['fold', 'allin']; // out of 'fold', 'check', 'call', 'raise', 'bet', 'allin'
         $round = $hand->rounds()->latest()->first();
         $nonpassiveAction = $this->roundService->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
-        $currentAmount = $this->getTotalBetAmountForCurrentSeatThisRound($currentSeat->id, $round);
+        $currentAmount = $this->roundService->getTotalBetAmountForCurrentSeatThisRound($currentSeat->id, $round);
 
         if (!$nonpassiveAction) { // no bet (meaning -> no raise or call or allin), only checks or folds
             $availableActions[] = 'bet';
             $availableActions[] = 'check';
         } else {
-            $nonpassiveAmount = $this->getTotalBetAmountForCurrentSeatThisRound($nonpassiveAction->seat->id, $round);
+            $nonpassiveAmount = $this->roundService->getTotalBetAmountForCurrentSeatThisRound($nonpassiveAction->seat->id, $round);
             if (($nonpassiveAmount < $currentAmount + $currentPlayer->balance) && ($nonpassiveAmount != $currentAmount)) {
                 $availableActions[] = 'call';
             }
             if ($nonpassiveAmount <= ($currentAmount + $currentPlayer->balance) / 2) {                
                 $availableActions[] = 'raise';
             }
-            if ($this->positionService->getLastRound($hand)->type === 'preflop') { // edge case: BB on preflop can check on first lap
+            $lastRound = $this->positionService->getLastRound($hand);
+            if ($lastRound->type === 'preflop') { // edge case: BB on preflop can check on first lap
                 $BB = Seat::find($hand->big_blind_id)->id;
                     if ($BB === $currentSeat->id) {
-                        if ($currentSeat->actions()->count() === 1) {
+                        if ($lastRound->actions()->where('seat_id', $BB)->count() === 1) {
                             $availableActions[] = 'check';
                         }
                     }
@@ -129,13 +130,6 @@ class ActionService
         }
 
         return $availableActions;
-    }
-
-    public function getTotalBetAmountForCurrentSeatThisRound($seatId, $round) {
-        return (int) $round
-        ->actions()
-        ->where('seat_id', $seatId)
-        ->sum('amount');
     }
 
     public function betSBandBB($hand, $round, $seat, $amount) {
