@@ -6,6 +6,7 @@ use App\Models\Table;
 use App\Models\Seat;
 use App\Services\HandService;
 use App\Services\ActionService;
+use App\Services\PokerStateService;
 use App\Events\HandStarted;
 use App\Events\ActionTaken;
 use App\Events\PlayerTurnChanged;
@@ -17,12 +18,13 @@ use Inertia\Inertia;
 
 class HandController extends Controller
 {
-    protected $handService, $actionService;
+    protected $handService, $actionService, $pokerStateService;
 
-    public function __construct(HandService $handService, ActionService $actionService)
+    public function __construct(HandService $handService, ActionService $actionService, PokerStateService $pokerStateService)
     {
         $this->handService = $handService;
         $this->actionService = $actionService;
+        $this->pokerStateService = $pokerStateService;
     }
 
     /**
@@ -90,5 +92,10 @@ class HandController extends Controller
                 'error' => 'Failed to start hand: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function getState(Table $table)
+    {
+        return $this->pokerStateService->getTableState($table);
     }
 }

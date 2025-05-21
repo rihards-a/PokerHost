@@ -17,6 +17,7 @@ Route::post('/seats/{seat}/leave', [SeatsController::class, 'leave'])->name('sea
 
 // Hand management
 Route::post('/tables/{table}/start-hand', [HandController::class, 'start'])->name('tables.start-hand');
+Route::get('/tables/{table}/state', [HandController::class, 'getState'])->name('getTableState');
 
 // Action management
 Route::post('/tables/{table}/hands/{hand}/actions', [ActionController::class, 'process'])->name('tables.action.process');
