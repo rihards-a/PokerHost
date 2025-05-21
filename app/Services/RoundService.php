@@ -77,10 +77,11 @@ class RoundService
     {
         $round->load('hand');
         $nextSeat = $this->positionService->getCurrentSeat($round->hand); // next to act
-        if (!$nextSeat) { // no one is active - do rundown???
+        $activeSeatHandsCount = $this->getActiveSeatHandsCount($round);
+        if ($activeSeatHandsCount < 2) { // only one player is left - showdown
             $round->hand->update(['is_complete' => true]);
             $round->update(['is_complete' => true]);
-            \Log::debug('preflop has finished! - no current seat');
+            \Log::debug('post flop has finished! - only one player left');
             return $round->is_complete;
         }
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
@@ -88,16 +89,6 @@ class RoundService
 
         if (!$nextSeatPreviousAction) {
             return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
-        }
-
-        if ($nextSeatPreviousAction->id === $latestNonpassiveAction->id) { // only one player who's active is left
-            if ($nextSeatPreviousAction->action_type === 'bet') { // SB and BB automatically make a bet at the start of preflop
-                return false; // in this case latest non passive can only be BB because he goes after SB
-            }
-            $round->hand->update(['is_complete' => true]);
-            $round->update(['is_complete' => true]);
-            \Log::debug('preflop has finished! - previous action was done by the player who is next');
-            return $round->is_complete;
         }
 
         $amount1 = $this->getTotalBetAmountForCurrentSeatThisRound($latestNonpassiveAction->seat->id, $round);
@@ -114,10 +105,11 @@ class RoundService
     {
         $round->load('hand');
         $nextSeat = $this->positionService->getCurrentSeat($round->hand); // next to act
-        if (!$nextSeat) { // no one is active - do rundown???
+        $activeSeatHandsCount = $this->getActiveSeatHandsCount($round);
+        if ($activeSeatHandsCount < 2) { // only one player is left - showdown
             $round->hand->update(['is_complete' => true]);
             $round->update(['is_complete' => true]);
-            \Log::debug('post flop has finished! - no current seat');
+            \Log::debug('post flop has finished! - only one player left');
             return $round->is_complete;
         }
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
@@ -125,13 +117,6 @@ class RoundService
 
         if (!$nextSeatPreviousAction) {
             return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
-        }
-
-        if ($nextSeatPreviousAction === $latestNonpassiveAction) { // only one player who's active is left
-            $round->hand->update(['is_complete' => true]);
-            $round->update(['is_complete' => true]);
-            \Log::debug('post flop has finished! - previous action was done by the same player');
-            return $round->is_complete;
         }
 
         if ($latestNonpassiveAction) { // next seat got re-raised
@@ -155,9 +140,20 @@ class RoundService
      */
     public function previousNonpassiveActionForCurrentNonFoldedPlayers($round)
     {   
-        $activeSeatHandsCount = $this->getActiveSeatHandsCount($round);
+        $activeSeatHandsCount = $this->getActiveSeatsCount($round);
         $actions = Action::where('round_id', $round->id)->orderBy('created_at', 'desc')->get();
         return $this->findNonPassiveAction($actions, $activeSeatHandsCount);
+    }
+
+    public function getActiveSeats($round)
+    {
+        $round->load('hand.table.seats.player');
+        
+        $occupiedSeats = $round->hand->table->occupiedSeats()
+            ->whereHas('player', function($q) {
+                $q->where('active', true); // player is active
+            })->get();
+        return $occupiedSeats;
     }
 
     /**
@@ -166,17 +162,26 @@ class RoundService
      * @param mixed $round
      * @return int Count of active seat hands
      */
+    public function getActiveSeatsCount($round)
+    {
+        return $this->getActiveSeats($round)->count();
+    }
+
     public function getActiveSeatHandsCount($round)
     {
-        $round->load('hand.table.seats.player');
-        
-        $occupiedSeats = $round->hand->table->occupiedSeats()
-            ->whereHas('player', function($q) {
-                $q->where('active', true); // player is active
-            })->get();
-        return $occupiedSeats->map(function ($seat) { // gets the amount of active seat hands in the round who haven't folded or allined yet
-            return $seat->seatHand()->where('status', 'active')->first();
-        })->count();
+        $occupiedSeats = $this->getActiveSeats($round);
+        $seatIds = $occupiedSeats->pluck('id');
+    
+        $seatHands = \App\Models\SeatHand::whereIn('seat_id', $seatIds)
+            ->where('status', 'active')
+            ->orderByDesc('id') // assuming higher ID = latest
+            ->get()
+            ->groupBy('seat_id')
+            ->map->first(); // get latest per seat
+    
+        \Log::debug('occupied seat hands:', [$seatHands->values()]);
+    
+        return $seatHands->count();
     }
 
     /**
