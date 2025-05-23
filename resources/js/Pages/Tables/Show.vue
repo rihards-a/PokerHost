@@ -35,7 +35,7 @@
             v-for="seat in seats" 
             :key="seat.id"
             :class="[
-              'seat absolute w-16 h-16 rounded-full flex items-center justify-center',
+              'seat absolute w-24 h-24 rounded-full flex items-center justify-center',
               seat.isOccupied ? 'bg-gray-300' : 'bg-gray-100',
               seat.id === currentTurnSeatId ? 'ring-4 ring-yellow-400' : '',
             ]"
