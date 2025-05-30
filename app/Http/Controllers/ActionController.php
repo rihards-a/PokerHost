@@ -13,6 +13,7 @@ use App\Events\PlayerTurnChanged;
 use App\Events\ActionTaken;
 use App\Events\RoundAdvanced;
 use App\Events\HandFinished;
+use App\Models\Seat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -171,23 +172,41 @@ class ActionController extends Controller
         return response()->json(['actions' => $actions]);
     }
 
-    public function getOwnPlayerData(Request $request)
+    public function getOwnPlayerData(Table $table, Request $request)
     {
         $guestSessionId = $request->session()->getId();
 
         // Try authenticated user
         if (Auth::check()) {
-            $player = Player::where('user_id', Auth::id())->first();
+            $player = Player::where('user_id', Auth::id())
+                ->whereHas('seats', function ($query) use ($table) {
+                $query->where('table_id', $table->id);
+            })->first();
         }
         else {
             // Fallback to guest
-            $player = $guestSessionId ? Player::where('guest_session', $guestSessionId)->first() : null;
+            $player = $guestSessionId ? Player::where('guest_session', $guestSessionId)
+            ->whereHas('seats', function ($query) use ($table) {
+            $query->where('table_id', $table->id);
+        })->first() : null;
         }
 
         // If no player found, 204 No Content
-        if (! $player) {
+        if (!$player) {
             return response()->json(null, 204);
         }
+
+        $seat = $player->seats()->where('table_id', $table->id)->first();
+
+        if (!$seat) {
+            return response()->json(['error' => 'Player not seated at this table'], 400);
+        }
+
+        $currentSeatHand = $seat->seatHand()->latest()->with(['hand'])->first();
+
+        $cards_dealt = $currentSeatHand->hand->rounds()->exists();
+        $card1 = $cards_dealt ? $currentSeatHand->card1 : null;
+        $card2 = $cards_dealt ? $currentSeatHand->card2 : null;       
 
         // Return only the specified attributes
         return response()->json([
@@ -196,7 +215,11 @@ class ActionController extends Controller
                 'balance'       => $player->balance ? $player->balance : 0,
                 'name'          => $guestSessionId ? $player->guest_name : Auth::user()->name,
                 'id'            => $player->id,
-            ]
+            ],
+            'cards' => [
+                'card1' => $card1,
+                'card2' => $card2,
+            ],
         ], 200);
     }
 }
