@@ -12,7 +12,7 @@
   
         <!-- Hand information -->
         <div v-if="currentHand" class="mb-4 p-2 bg-blue-100 rounded">
-          <p><strong>Hand #{{ currentHand }}</strong></p>
+          <p><strong>Hand #{{ currentHand.id }}</strong></p>
           <p v-if="community.length > 0"><strong>Community Cards:</strong> {{ community.join(' ') }}</p>
           <p v-if="currentPot > 0"><strong>Pot:</strong> ${{ currentPot }}</p>
           <p v-if="currentRound"><strong>Round:</strong> {{ currentRound }}</p>
@@ -339,8 +339,20 @@
             this.currentDealer = data.table?.dealer_seat_id || null;
             this.seatActions = data.seats || [];
             this.lastAction = data.last_action || null;
-
-            // Optional: Add any additional state population you need
+            // Update seats with current turn data
+            this.currentTurnSeatId = data.current_seat.id || null;
+            if (this.userCurrentSeat && this.userCurrentSeat.id === this.currentTurnSeatId) {
+              this.isPlayerTurn = true;
+              this.getAvailableActions();
+              this.addLog('It\'s your turn!');
+            } else {
+              const seat = this.seats.find(s => s.id === this.currentTurnSeatId);
+              if (seat) {
+                this.addLog(`It's ${seat.userName}'s turn`);
+              }
+              this.isPlayerTurn = false;
+              this.availableActions = [];
+            }
         } catch (error) {
             console.error("Error fetching table state:", error);
         }
@@ -370,25 +382,31 @@
   
       // Get current player information
       getCurrentPlayerInfo() {
-        fetch(`/players/me`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-          }
-        })
-        .then(response => {
-          if (!response.ok) throw new Error('Failed to get player info');
-          return response.json();
-        })
-        .then(data => {
-          this.currentPlayer = data.player;
-          this.betAmount = Math.min(this.minBetAmount, this.currentPlayer.balance);
-        })
-        .catch(error => {
-          console.error('Error getting player info:', error);
-        });
-      },
+      fetch(`/tables/${this.table.id}/players/me`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to get player info');
+        return response.json();
+      })
+      .then(data => {
+        this.currentPlayer = data.player;
+        const cards = data.cards;
+        this.betAmount = Math.min(this.minBetAmount, this.currentPlayer.balance);
+        
+        this.playerCards = [cards.card1, cards.card2];
+        this.addLog(`You received: ${this.playerCards}`);
+        
+        this.getAvailableActions(); // attempt to get available actions
+      })
+      .catch(error => {
+        console.error('Error getting player info:', error);
+      });
+    },
   
       // Handle user actions
       joinSeat(seatId) {
@@ -473,7 +491,7 @@
       getAvailableActions() {
         if (!this.userCurrentSeat || !this.currentHand) return;
         
-        fetch(`/tables/${this.table.id}/hands/${this.currentHand}/actions`, {
+        fetch(`/tables/${this.table.id}/hands/${this.currentHand.id}/actions`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -502,7 +520,7 @@
       takeAction(actionType, amount = 0) {
         if (!this.userCurrentSeat || !this.currentHand) return;
         
-        fetch(`/tables/${this.table.id}/hands/${this.currentHand}/actions`, {
+        fetch(`/tables/${this.table.id}/hands/${this.currentHand.id}/actions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -614,7 +632,7 @@
       },
       
       handleHandStarted(handId, data) {
-        this.currentHand = handId;
+        this.currentHand.id = handId;
         this.currentDealer = data.dealer;
         this.currentRound = 'preflop';
         this.community = [];
