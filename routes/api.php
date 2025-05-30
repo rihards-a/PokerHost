@@ -23,4 +23,4 @@ Route::get('/tables/{table}/state', [HandController::class, 'getState'])->name('
 Route::post('/tables/{table}/hands/{hand}/actions', [ActionController::class, 'process'])->name('tables.action.process');
 Route::get('/tables/{table}/hands/{hand}/actions', [ActionController::class, 'getAvailableActions'])->name('tables.action.get');
 // for receiving player data
-Route::get('players/me', [ActionController::class, 'getOwnPlayerData']);
+Route::get('/tables/{table}/players/me', [ActionController::class, 'getOwnPlayerData']);
