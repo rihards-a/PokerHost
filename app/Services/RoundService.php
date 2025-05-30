@@ -87,12 +87,12 @@ class RoundService
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
         $latestNonpassiveAction = $this->previousNonpassiveActionForCurrentNonFoldedPlayers($round);
 
-        if (!$nextSeatPreviousAction) {
+        if (!$nextSeatPreviousAction || $nextSeatPreviousAction->action_type === 'bet') { // 'bet' can only be done by SB and BB on preflop
             return false; // If there hasn't been a next action, every player has not made a move - the round is not complete
         }
 
         $amount1 = $this->getTotalBetAmountForCurrentSeatThisRound($latestNonpassiveAction->seat->id, $round);
-        $amount2= $this->getTotalBetAmountForCurrentSeatThisRound($nextSeatPreviousAction->seat->id, $round);
+        $amount2 = $this->getTotalBetAmountForCurrentSeatThisRound($nextSeatPreviousAction->seat->id, $round);
         if ($amount1 > $amount2) return false; // next seat got re-raised
 
         // everyone has played a passive action in the last lap of the round
