@@ -37,6 +37,7 @@ class PokerStateService
             'community_cards' =>    $currentHand ? $this->getCommunityCards($handId) : null,
             'pot' =>                $currentHand ? $this->getPotInfo($handId) : null,
             'last_action' =>        $currentHand ? $this->positionService->getLastAction($currentHand) : null,
+            'current_seat' =>       $currentHand ? $this->positionService->getCurrentSeat($currentHand) : null,
         ];
     }
     
