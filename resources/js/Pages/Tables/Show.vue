@@ -14,7 +14,7 @@
         <div v-if="currentHand" class="mb-4 p-2 bg-blue-100 rounded">
           <p><strong>Hand #{{ currentHand.id }}</strong></p>
           <p v-if="community.length > 0"><strong>Community Cards:</strong> {{ community.join(' ') }}</p>
-          <p v-if="currentPot > 0"><strong>Pot:</strong> ${{ currentPot }}</p>
+          <p><strong>Pot:</strong> ${{ currentPot }}</p>
           <p v-if="currentRound"><strong>Round:</strong> {{ currentRound }}</p>
         </div>
   
@@ -44,7 +44,10 @@
             <div v-if="seat.isOccupied" class="text-center">
               <p class="text-sm font-bold">{{ seat.userName }}</p>
               <p v-if="seatActions[seat.id]" class="text-xs">
-                {{ seatActions[seat.id].type }} ${{ seatActions[seat.id].amount }}
+                <span v-if="seatActions[seat.id].type">action: {{ seatActions[seat.id].type }}</span>
+                <span v-if="seatActions[seat.id].amount"> ${{ seatActions[seat.id].amount }}</span>
+                <span v-if="seatActions[seat.id].stack !== undefined"> stack: {{ seatActions[seat.id].stack }}$</span>
+                <span v-if="seatActions[seat.id].status"> status: {{ seatActions[seat.id].status }}</span>
               </p>
             </div>
             <button 
@@ -153,29 +156,29 @@
                   class="px-2 py-1 border rounded w-24 text-right" 
                 />
                 <span class="ml-2">chips</span>
+                <!-- Quick bet buttons -->
+                <div class="flex space-x-2 mt-2">
+                  <button 
+                    @click="betAmount = calculatePotPercentage(0.5)" 
+                    class="px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
+                  >
+                    1/2 Pot
+                  </button>
+                  <button 
+                    @click="betAmount = calculatePotPercentage(0.75)" 
+                    class="px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
+                  >
+                    3/4 Pot
+                  </button>
+                  <button 
+                    @click="betAmount = calculatePotPercentage(1)" 
+                    class="px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
+                  >
+                    Pot
+                  </button>
+                </div>
               </div>
               
-              <!-- Quick bet buttons -->
-              <div class="flex space-x-2 mt-2">
-                <button 
-                  @click="betAmount = calculatePotPercentage(0.5)" 
-                  class="px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
-                >
-                  1/2 Pot
-                </button>
-                <button 
-                  @click="betAmount = calculatePotPercentage(0.75)" 
-                  class="px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
-                >
-                  3/4 Pot
-                </button>
-                <button 
-                  @click="betAmount = calculatePotPercentage(1)" 
-                  class="px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
-                >
-                  Pot
-                </button>
-              </div>
             </div>
             
             <!-- Bet/Raise button -->
@@ -228,7 +231,7 @@
         isPlayerTurn: false,
         availableActions: [],
         betAmount: 0,
-        minBetAmount: 10, // Default minimum bet
+        minBetAmount: 2, // Default minimum bet
         seatActions: {},
         gameLogs: [],
         userCurrentSeat: this.currentUserSeat, // Initialize from prop
@@ -335,12 +338,12 @@
             this.currentHand = data.hand;
             this.currentRound = data.round;
             this.community = data.community_cards || [];
-            this.currentPot = data.pot?.total || 0;
+            this.currentPot = data.pot || 0;
             this.currentDealer = data.table?.dealer_seat_id || null;
             this.seatActions = data.seats || [];
             this.lastAction = data.last_action || null;
             // Update seats with current turn data
-            this.currentTurnSeatId = data.current_seat.id || null;
+            this.currentTurnSeatId = data.current_seat?.id;
             if (this.userCurrentSeat && this.userCurrentSeat.id === this.currentTurnSeatId) {
               this.isPlayerTurn = true;
               this.getAvailableActions();
@@ -353,6 +356,7 @@
               this.isPlayerTurn = false;
               this.availableActions = [];
             }
+          this.addLog(`Table state fetched successfully`);
         } catch (error) {
             console.error("Error fetching table state:", error);
         }
@@ -398,8 +402,10 @@
         const cards = data.cards;
         this.betAmount = Math.min(this.minBetAmount, this.currentPlayer.balance);
         
-        this.playerCards = [cards.card1, cards.card2];
-        this.addLog(`You received: ${this.playerCards}`);
+        if (!(!cards || !cards.card1 || !cards.card2)) {
+          this.playerCards = [cards.card1, cards.card2];
+          this.addLog(`You received: ${this.playerCards}`);
+        }
         
         this.getAvailableActions(); // attempt to get available actions
       })
@@ -545,12 +551,12 @@
           this.availableActions = [];
           
           // Update seatActions to show the action immediately
-          if (this.userCurrentSeat) {
+          /*if (this.userCurrentSeat) {
             this.seatActions[this.userCurrentSeat.id] = {
               type: actionType,
               amount: amount
             };
-          }
+          }*/
         })
         .catch(error => {
           console.error('Error taking action:', error);
@@ -594,7 +600,8 @@
       handleActionTaken(seatId, action, amount) {
         const seat = this.seats.find(s => s.id === seatId);
         if (seat) {
-          this.seatActions[seatId] = { type: action, amount: amount };
+          this.seatActions[seatId][type] = action;
+          this.seatActions[seatId][amount] = amount;
           this.addLog(`${seat.userName} ${action}${amount > 0 ? ' $' + amount : ''}`);
           
           // Update pot
@@ -632,7 +639,9 @@
       },
       
       handleHandStarted(handId, data) {
-        this.currentHand.id = handId;
+        if (!this.currentHand || this.currentHand.id !== handId) {
+          this.currentHand = { id: handId };
+        }
         this.currentDealer = data.dealer;
         this.currentRound = 'preflop';
         this.community = [];
@@ -719,22 +728,342 @@
   });
   </script>
   
+  
   <style scoped>
-  .poker-table-container {
-    max-width: 1000px;
-    margin: 0 auto;
+.poker-table-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.seat {
+  width: 4rem;
+  height: 4rem;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.seat:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.poker-table {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  border: 8px solid #92400e;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3), 0 8px 25px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: visible;
+}
+
+.poker-table::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.seat.occupied {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-color: #6b7280;
+}
+
+.seat.occupied .player-info {
+  color: #374151;
+  font-weight: 600;
+}
+
+.seat.is_turn {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border-color: #d97706;
+  animation: pulse-turn 2s infinite;
+}
+
+@keyframes pulse-turn {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(251, 191, 36, 0);
+  }
+}
+
+.player-info {
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.player-bet {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #dc2626;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.player-status {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #7c3aed;
+  color: white;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.player-status.folded {
+  background: #6b7280;
+}
+
+.player-status.all-in {
+  background: #dc2626;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-button {
+  transition: all 0.2s ease;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.action-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bet-controls {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.bet-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #e5e7eb;
+  outline: none;
+}
+
+.bet-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.bet-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.quick-bet-buttons {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.quick-bet-button {
+  flex: 1;
+  padding: 6px 12px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-bet-button:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.community-cards {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.card {
+  width: 48px;
+  height: 67px;
+  background: white;
+  border: 2px solid #374151;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card.red {
+  color: #dc2626;
+}
+
+.card.black {
+  color: #374151;
+}
+
+.game-log {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.game-log p {
+  margin: 2px 0;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.game-log p:nth-child(odd) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.dealer-button {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border: 2px solid #d97706;
+  border-radius: 50%;
+  color: white;
+  font-weight: bold;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.pot-display {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.hand-info {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-left: 4px solid #3b82f6;
+}
+
+.player-cards {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border-left: 4px solid #10b981;
+}
+
+.turn-indicator {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-left: 4px solid #f59e0b;
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 5px rgba(245, 158, 11, 0.5);
+  }
+  to {
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.8);
+  }
+}
+
+.table-controls button {
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.table-controls button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .poker-table {
+    height: 200px;
   }
   
   .seat {
-    width: 4rem;
-    height: 4rem;
-    position: absolute;
-    transform: translate(-50%, -50%);
-    border: 2px solid #333;
+    width: 3rem;
+    height: 3rem;
+    font-size: 0.7rem;
   }
   
-  .poker-table {
-    position: relative;
-    height: 300px;
+  .action-buttons {
+    flex-direction: column;
+    gap: 4px;
   }
-  </style>
+  
+  .quick-bet-buttons {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .poker-table-container {
+    padding: 8px;
+  }
+  
+  .community-cards .card {
+    width: 36px;
+    height: 50px;
+    font-size: 0.8rem;
+  }
+  
+  .seat {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 0.65rem;
+  }
+}
+</style>
