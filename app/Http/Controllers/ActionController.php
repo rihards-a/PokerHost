@@ -204,7 +204,7 @@ class ActionController extends Controller
 
         $currentSeatHand = $seat->seatHand()->latest()->with(['hand'])->first();
 
-        $cards_dealt = $currentSeatHand->hand->rounds()->exists();
+        $cards_dealt = $currentSeatHand?->hand->rounds()->exists();
         $card1 = $cards_dealt ? $currentSeatHand->card1 : null;
         $card2 = $cards_dealt ? $currentSeatHand->card2 : null;       
 
