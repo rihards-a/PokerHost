@@ -8,6 +8,7 @@ use App\Models\Table;
 use App\Models\Seat;
 use App\Models\SeatHand;
 use App\Models\Action;
+use Illuminate\Support\Arr;
 
 class PokerStateService
 {
@@ -27,7 +28,7 @@ class PokerStateService
     public function getTableState(Table $table): array
     {
         $currentHand = $this->getCurrentHand($table->id);
-        $handId = $currentHand ? $currentHand->id : null;
+        $handId = $currentHand?->id;
         
         return [
             'table' =>              $this->getTableInfo($table),
@@ -106,7 +107,7 @@ class PokerStateService
      * @param int|null $handId
      * @return array
      */
-    private function getSeatsInfo(int $tableId, ?int $handId): array
+    private function    getSeatsInfo(int $tableId, ?int $handId): array
     {
         $hand = Hand::find($handId);
         $to_act = $handId ? $this->positionService->getCurrentSeat($hand)->id : null;
@@ -121,15 +122,21 @@ class PokerStateService
                 'id' => $seat->id,
                 'position' => $seat->position,
                 'occupied' => $taken,
-                'player' => $taken ? [
-                    'id' => $seat->player->id,
-                    'name' => $guest ? $seat->player->guest_name : $seat->player->user->name,
-                ] : null,
-                'stack' => $taken ? $seat->player->balance : null,
-                'bet' => $taken ? $this->getCurrentBet($handId, $seat->id) : 0,
-                'status' => $taken ? $this->getPlayerStatus($handId, $seat->id) : null, // 'active', 'folded', 'all-in', etc.
-                'is_turn' => $handId && $seat->id === $to_act,
             ];
+            if ($taken) {
+                $player = $seat->player;
+                $seatData[$seat->id] += [
+                    'player' => [
+                        'id' => $seat->player->id,
+                        'name' => $guest ? $player->guest_name : $player->user->name,
+                    ],
+                    'stack' => $player->balance,
+                    'status' => $this->getPlayerStatus($handId, $seat->id), // 'active', 'folded', 'all-in', etc.
+                    'type' => $this->getCurrentBet($handId, $seat->id)[1],
+                    'amount' => $this->getCurrentBet($handId, $seat->id)[0], // get the current total bet amount in the current round
+                    'is_turn' => $handId && $seat->id === $to_act,
+                ];
+            }
         }
         
         return $seatData;
@@ -137,26 +144,33 @@ class PokerStateService
     
     
     /**
-     * Get the current bet amount for a player in the current hand
+     * Get the current bet amount and last action type for a player in the current hand.
      *
      * @param int|null $handId
      * @param int $seatId
-     * @return int
+     * @return array [int $currentBet, string|null $latestActionType]
      */
-    private function getCurrentBet(?int $handId, int $seatId): int
+    private function getCurrentBet(?int $handId, int $seatId): array
     {
-        if (!$handId) return 0;
-        
-        // Get the current round's bet total for this seat
-        $hand = Hand::find($handId)->with('rounds')->latest()->first();
+        if (!$handId) return [0, null];
+
+        $hand = Hand::with('rounds')->find($handId);
+        if (!$hand) return [0, null];
+
         $round = $hand->rounds()->where('is_complete', false)->latest()->first();
-        
+        if (!$round) return [0, null];
+
         $currentBet = Action::where('seat_id', $seatId)
             ->where('round_id', $round->id)
             ->whereIn('action_type', ['allin', 'bet', 'raise', 'call'])
             ->sum('amount');
-            
-        return $currentBet;
+
+        $latestActionType = Action::where('seat_id', $seatId)
+            ->where('round_id', $round->id)
+            ->latest()
+            ->value('action_type');
+
+        return [$currentBet, $latestActionType];
     }
     
     /**
@@ -192,9 +206,7 @@ class PokerStateService
         $cards = [];
         
         if (in_array($round->type, ['flop', 'turn', 'river'])) {
-            $cards[] = $handCards[0];
-            $cards[] = $handCards[1];
-            $cards[] = $handCards[2];
+            $cards = array_slice($handCards, 0, 3);
         } else return [];
         
         if (in_array($round->type, ['turn', 'river'])) {
@@ -205,7 +217,7 @@ class PokerStateService
             $cards[] = $handCards[4];
         }
         
-        return $cards; // Remove any null values
+        return array_filter($cards);
     }
     
     /**
@@ -218,11 +230,11 @@ class PokerStateService
     {                
         // In a real implementation, you'd calculate the main pot and side pots
         // For now, just sum up all bets
-        $round = Hand::find($handId)->rounds()->where('is_complete', false)->latest()->first();
-        $totalBets = Action::where('round_id', $round->id)
-            ->whereIn('action_type', ['bet', 'raise', 'call'])
-            ->sum('amount');
-            
+        $totalBets = Action::whereHas('round', function ($query) use ($handId) {
+            $query->where('hand_id', $handId);
+        })->whereIn('action_type', ['bet', 'raise', 'call', 'allin'])
+          ->sum('amount');
+
         return $totalBets;
     }
 }
