@@ -77,11 +77,10 @@ class RoundService
     {
         $round->load('hand');
         $nextSeat = $this->positionService->getCurrentSeat($round->hand); // next to act
-        $activeSeatHandsCount = $this->getActiveSeatHandsCount($round);
-        if ($activeSeatHandsCount < 2) { // only one player is left - showdown
+        if (!$nextSeat) {
             $round->hand->update(['is_complete' => true]);
             $round->update(['is_complete' => true]);
-            \Log::debug('post flop has finished! - only one player left');
+            \Log::debug('preflop has finished! - no next player');
             return $round->is_complete;
         }
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
@@ -105,11 +104,10 @@ class RoundService
     {
         $round->load('hand');
         $nextSeat = $this->positionService->getCurrentSeat($round->hand); // next to act
-        $activeSeatHandsCount = $this->getActiveSeatHandsCount($round);
-        if ($activeSeatHandsCount < 2) { // only one player is left - showdown
+        if (!$nextSeat) {
             $round->hand->update(['is_complete' => true]);
             $round->update(['is_complete' => true]);
-            \Log::debug('post flop has finished! - only one player left');
+            \Log::debug('post flop has finished! - no next player');
             return $round->is_complete;
         }
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
