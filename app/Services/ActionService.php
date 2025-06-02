@@ -118,14 +118,16 @@ class ActionService
             if ($nonpassiveAmount <= ($currentAmount + $currentPlayer->balance) / 2) {                
                 $availableActions[] = 'raise';
             }
-            $lastRound = $this->positionService->getLastRound($hand);
-            if ($lastRound->type === 'preflop') { // edge case: BB on preflop can check on first lap
-                $BB = Seat::find($hand->big_blind_id)->id;
-                    if ($BB === $currentSeat->id) {
-                        if ($lastRound->actions()->where('seat_id', $BB)->count() === 1) {
-                            $availableActions[] = 'check';
+            if ($nonpassiveAmount == $currentAmount) { // edge case: BB on preflop can check on first lap if the bet amount is the same size as BB
+                $lastRound = $this->positionService->getLastRound($hand);
+                if ($lastRound->type === 'preflop') {
+                    $BB = Seat::find($hand->big_blind_id)->id;
+                        if ($BB === $currentSeat->id) {
+                            if ($lastRound->actions()->where('seat_id', $BB)->count() === 1) {
+                                $availableActions[] = 'check';
+                            }
                         }
-                    }
+                }
             }
         }
 
