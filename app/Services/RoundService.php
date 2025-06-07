@@ -77,10 +77,10 @@ class RoundService
     {
         $round->load('hand');
         $nextSeat = $this->positionService->getCurrentSeat($round->hand); // next to act
-        if (!$nextSeat) {
+        if ($this->getActiveSeatHands($round) === 1) {
             $round->hand->update(['is_complete' => true]);
             $round->update(['is_complete' => true]);
-            \Log::debug('preflop has finished! - no next player');
+            \Log::debug('preflop has finished! - one active seat hand left');
             return $round->is_complete;
         }
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
@@ -104,10 +104,10 @@ class RoundService
     {
         $round->load('hand');
         $nextSeat = $this->positionService->getCurrentSeat($round->hand); // next to act
-        if (!$nextSeat) {
+        if ($this->getActiveSeatHands($round) === 1) {
             $round->hand->update(['is_complete' => true]);
             $round->update(['is_complete' => true]);
-            \Log::debug('post flop has finished! - no next player');
+            \Log::debug('postflop has finished! - one active seat hand left');
             return $round->is_complete;
         }
         $nextSeatPreviousAction = Action::where('round_id', $round->id)->where('seat_id', $nextSeat->id)->latest()->first();
@@ -165,21 +165,13 @@ class RoundService
         return $this->getActiveSeats($round)->count();
     }
 
-    public function getActiveSeatHandsCount($round)
+    public function getActiveSeatHands($round)
     {
-        $occupiedSeats = $this->getActiveSeats($round);
-        $seatIds = $occupiedSeats->pluck('id');
-    
-        $seatHands = \App\Models\SeatHand::whereIn('seat_id', $seatIds)
-            ->where('status', 'active')
-            ->orderByDesc('id') // assuming higher ID = latest
-            ->get()
-            ->groupBy('seat_id')
-            ->map->first(); // get latest per seat
-    
-        \Log::debug('occupied seat hands:', [$seatHands->values()]);
-    
-        return $seatHands->count();
+        $activeSeats = $this->getActiveSeats($round);
+        return $activeSeats->map(function ($seat) {
+            $latest = $seat->seatHand()->latest()->first();
+            return $latest?->status === 'active' ? $latest : null;
+        })->filter()->count();
     }
 
     /**
