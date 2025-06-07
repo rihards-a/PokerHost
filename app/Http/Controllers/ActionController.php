@@ -5,14 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Table;
 use App\Models\Hand;
 use App\Models\Player;
+use App\Services\PokerStateService;
 use App\Services\ActionService;
 use App\Services\PositionService;
 use App\Services\RoundService;
 use App\Services\HandService;
 use App\Events\TableStateChanged;
-use App\Events\PlayerTurnChanged;
-use App\Events\ActionTaken;
-use App\Events\RoundAdvanced;
 use App\Events\HandFinished;
 use App\Models\Seat;
 use Illuminate\Http\Request;
@@ -21,10 +19,11 @@ use Illuminate\Support\Facades\DB;
 
 class ActionController extends Controller
 {
-    protected $actionService, $positionService, $roundService, $handService;
+    protected $actionService, $positionService, $roundService, $handService, $pokerStateService;
 
-    public function __construct(ActionService $actionService, PositionService $positionService, RoundService $roundService, HandService $handService)
+    public function __construct(ActionService $actionService, PositionService $positionService, RoundService $roundService, HandService $handService, PokerStateService $pokerStateService)
     {
+        $this->pokerStateService = $pokerStateService;
         $this->actionService = $actionService;
         $this->positionService = $positionService;
         $this->roundService = $roundService;
@@ -97,35 +96,8 @@ class ActionController extends Controller
                 if ($hand->is_complete) {
                     broadcast(new HandFinished($table->id, $hand->id, $winners));
                 } else {
-                    if ($roundFinished) {
-                        $community_cards = json_decode($hand->community_cards);
-                        switch ($roundFinished->type) {
-                            /*
-                            case 'preflop':
-                                $cards = array_slice($community_cards, 0, 3);
-                                broadcast(new RoundAdvanced($table->id, 'flop', $cards));
-                                break;
-                            case 'flop':
-                                $cards = array_slice($community_cards, 3, 1);
-                                broadcast(new RoundAdvanced($table->id, 'turn', $cards));
-                                break;
-                            case 'turn':
-                                $cards = array_slice($community_cards, 4, 1);
-                                broadcast(new RoundAdvanced($table->id, 'river', $cards));
-                                break;
-                            case 'river':
-                                // taken care of by HandFinished broadcast
-                                break;
-                            */
-                        }
-                        \Log::debug('round advanced... ', [$roundFinished->type, $community_cards]);
-                    }
-                    /*
-                    $nextSeat = $this->positionService->getCurrentSeat($hand);
-                    broadcast(new ActionTaken($table->id, $action));
-                    broadcast(new PlayerTurnChanged($table->id, $nextSeat->id));
-                    */
-                    broadcast(new TableStateChanged($table->id));
+                    if ($roundFinished) {\Log::debug('round advanced... ', [$roundFinished->type, json_decode($hand->community_cards)]);}
+                    broadcast(new TableStateChanged($table->id, $this->pokerStateService->getTableState($table)));
                 }
             });
        

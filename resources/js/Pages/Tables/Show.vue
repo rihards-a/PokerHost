@@ -301,7 +301,7 @@
         
         // Bind to events
         this.channel.bind('state.changed', (data) => {
-          this.fetchTableState();
+          this.handleStateUpdate(data.tableState);
         });
 
         this.channel.bind('seat.updated', (data) => {
@@ -498,6 +498,11 @@
           }
         })
         .then(response => {
+          if (response.status === 403) {
+            console.log('Not your turn'); // Not the player's turn or not authorized to act - this is normal
+            this.availableActions = [];
+            return null;
+          }
           if (!response.ok) throw new Error('Failed to get available actions');
           return response.json();
         })
@@ -558,6 +563,24 @@
           
           const action = seatData.isOccupied ? 'joined' : 'left';
           this.addLog(`${seatData.userName || 'A player'} ${action} seat #${seatData.position}`);
+        }
+      },
+
+      handleStateUpdate(data) {
+        this.addLog(`Receiving table state...`);
+        try {
+            this.currentHand = data.hand;
+            this.currentRound = data.round;
+            this.community = data.community_cards || [];
+            this.currentPot = data.pot || 0;
+            this.currentDealer = data.table?.dealer_seat_id || null;
+            this.seatActions = data.seats || [];
+            this.lastAction = data.last_action || null;
+            // Update seats with current turn data
+            this.handleTurnChange(data.current_seat?.id);
+          this.addLog(`Table state received successfully`);
+        } catch (error) {
+            console.error("Error setting table state:", error);
         }
       },
       

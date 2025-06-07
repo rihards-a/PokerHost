@@ -15,15 +15,17 @@ class TableStateChanged implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $tableId;
+    public $tableState;
 
     /**
      * Create a new event instance.
      */
-    public function __construct($tableId)
+    public function __construct($tableId, $tableState)
     {
         $this->tableId = $tableId;
+        $this->tableState = $tableState;
     }
-
+    
     /**
      * Get the channels the event should broadcast on.
      *
