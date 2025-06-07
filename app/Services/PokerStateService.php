@@ -107,7 +107,7 @@ class PokerStateService
      * @param int|null $handId
      * @return array
      */
-    private function    getSeatsInfo(int $tableId, ?int $handId): array
+    private function getSeatsInfo(int $tableId, ?int $handId): array
     {
         $hand = Hand::find($handId);
         $to_act = $handId ? $this->positionService->getCurrentSeat($hand)->id : null;

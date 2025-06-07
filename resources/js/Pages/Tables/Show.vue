@@ -300,6 +300,10 @@
         }
         
         // Bind to events
+        this.channel.bind('state.changed', (data) => {
+          this.fetchTableState();
+        });
+
         this.channel.bind('seat.updated', (data) => {
           this.handleSeatUpdate(data.seat);
         });
@@ -330,6 +334,7 @@
       },
   
       async fetchTableState() {
+        this.addLog(`Fetching table state...`);
         try {
             const tableId = this.table.id;
             const response = await axios.get(`/tables/${tableId}/state`);
@@ -343,19 +348,7 @@
             this.seatActions = data.seats || [];
             this.lastAction = data.last_action || null;
             // Update seats with current turn data
-            this.currentTurnSeatId = data.current_seat?.id;
-            if (this.userCurrentSeat && this.userCurrentSeat.id === this.currentTurnSeatId) {
-              this.isPlayerTurn = true;
-              this.getAvailableActions();
-              this.addLog('It\'s your turn!');
-            } else {
-              const seat = this.seats.find(s => s.id === this.currentTurnSeatId);
-              if (seat) {
-                this.addLog(`It's ${seat.userName}'s turn`);
-              }
-              this.isPlayerTurn = false;
-              this.availableActions = [];
-            }
+            this.handleTurnChange(data.current_seat?.id);
           this.addLog(`Table state fetched successfully`);
         } catch (error) {
             console.error("Error fetching table state:", error);
@@ -540,23 +533,16 @@
             amount: amount
           })
         })
-        .then(async response => {
-          const data = await response.json().catch(() => ({}));
-          if (!response.ok) throw new Error('Failed to take action');
-          return response.json();
-        })
+        .then(response => response.json()
+          .then(data => {
+            if (!response.ok) throw new Error('Failed to take action');
+            return data;
+          })
+        )
         .then(data => {
           this.addLog(`You ${actionType}${amount > 0 ? ' $' + amount : ''}`);
           this.isPlayerTurn = false;
           this.availableActions = [];
-          
-          // Update seatActions to show the action immediately
-          /*if (this.userCurrentSeat) {
-            this.seatActions[this.userCurrentSeat.id] = {
-              type: actionType,
-              amount: amount
-            };
-          }*/
         })
         .catch(error => {
           console.error('Error taking action:', error);

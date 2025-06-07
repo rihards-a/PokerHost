@@ -9,6 +9,7 @@ use App\Services\ActionService;
 use App\Services\PositionService;
 use App\Services\RoundService;
 use App\Services\HandService;
+use App\Events\TableStateChanged;
 use App\Events\PlayerTurnChanged;
 use App\Events\ActionTaken;
 use App\Events\RoundAdvanced;
@@ -99,29 +100,32 @@ class ActionController extends Controller
                     if ($roundFinished) {
                         $community_cards = json_decode($hand->community_cards);
                         switch ($roundFinished->type) {
+                            /*
                             case 'preflop':
-                                \Log::debug('round advanced... ', [$roundFinished->type, $community_cards]);
                                 $cards = array_slice($community_cards, 0, 3);
                                 broadcast(new RoundAdvanced($table->id, 'flop', $cards));
                                 break;
                             case 'flop':
-                                \Log::debug('round advanced... ', [$roundFinished->type, $community_cards]);
                                 $cards = array_slice($community_cards, 3, 1);
                                 broadcast(new RoundAdvanced($table->id, 'turn', $cards));
                                 break;
                             case 'turn':
-                                \Log::debug('round advanced... ', [$roundFinished->type, $community_cards]);
                                 $cards = array_slice($community_cards, 4, 1);
                                 broadcast(new RoundAdvanced($table->id, 'river', $cards));
                                 break;
                             case 'river':
                                 // taken care of by HandFinished broadcast
                                 break;
+                            */
                         }
+                        \Log::debug('round advanced... ', [$roundFinished->type, $community_cards]);
                     }
+                    /*
                     $nextSeat = $this->positionService->getCurrentSeat($hand);
                     broadcast(new ActionTaken($table->id, $action));
                     broadcast(new PlayerTurnChanged($table->id, $nextSeat->id));
+                    */
+                    broadcast(new TableStateChanged($table->id));
                 }
             });
        

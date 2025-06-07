@@ -7,6 +7,7 @@ use App\Models\Seat;
 use App\Services\HandService;
 use App\Services\ActionService;
 use App\Services\PokerStateService;
+use App\Events\TableStateChanged;
 use App\Events\HandStarted;
 use App\Events\ActionTaken;
 use App\Events\PlayerTurnChanged;
@@ -64,6 +65,7 @@ class HandController extends Controller
                 $BB_A = $this->actionService->betSBandBB($hand, $round, $BB, 2); #TODO make sure this is only done when player balance > 2
     
                 DB::afterCommit(function () use ($table, $occupiedSeats, $hand, $SB, $BB, $SB_A, $BB_A) {
+                    /*
                     foreach ($occupiedSeats as $seat) {
                         broadcast(new PlayerCardsDealt($table->id, $seat->id, [
                             'card1' => $seat->seatHand->first()->card1,
@@ -74,12 +76,13 @@ class HandController extends Controller
                         'dealer'       => Seat::find($hand->dealer_id)->position,
                         'small_blind'  => $SB->position,
                         'big_blind'    => $BB->position,
-                    ]));
-                    
+                    ]));                    
                     broadcast(new ActionTaken($table->id, $SB_A));
                     broadcast(new ActionTaken($table->id, $BB_A));
                     $nextToAct = $table->occupiedSeats->find($hand->big_blind_id)->getNextActive()->id;
                     broadcast(new PlayerTurnChanged($table->id, $nextToAct));
+                    */
+                    broadcast(new TableStateChanged($table->id));
                 });
             });
     
