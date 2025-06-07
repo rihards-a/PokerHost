@@ -17,7 +17,9 @@ Route::post('/seats/{seat}/leave', [SeatsController::class, 'leave'])->name('sea
 
 // Hand management
 Route::post('/tables/{table}/start-hand', [HandController::class, 'start'])->name('tables.start-hand');
-Route::get('/tables/{table}/state', [HandController::class, 'getState'])->name('getTableState');
+Route::get('/tables/{table}/state', [HandController::class, 'getState'])
+    ->middleware('throttle:30,1') // 30 requests per 1 minute # possible to create a ratelimiter middleware in service provider with perSeconds i think
+    ->name('getTableState');
 
 // Action management
 Route::post('/tables/{table}/hands/{hand}/actions', [ActionController::class, 'process'])->name('tables.action.process');
