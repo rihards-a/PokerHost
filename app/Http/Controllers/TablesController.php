@@ -207,8 +207,14 @@ class TablesController extends Controller
     /**
      * Store a newly created table in storage.
      */
-    public function store(Request $request)
+    public function store($locale = 'en', Request $request)
     {
+
+        // Set locale if provided
+        if (in_array($locale, ['en', 'lv'])) {
+            app()->setLocale($locale);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'max_seats' => 'required|integer|min:2|max:12',
@@ -229,7 +235,7 @@ class TablesController extends Controller
             ]);
         }
         
-        return redirect()->route('dashboard')->with('success', 'Table created successfully!');
+        return redirect()->route('dashboard', ['locale' => $locale])->with('success', 'Table created successfully!');
     }
 
     /**

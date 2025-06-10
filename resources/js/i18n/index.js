@@ -1,4 +1,3 @@
-// resources/js/i18n/index.js
 import { createI18n } from 'vue-i18n'
 
 // Get initial locale from URL
