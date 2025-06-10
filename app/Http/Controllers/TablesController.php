@@ -198,7 +198,7 @@ class TablesController extends Controller
         
             broadcast(new TableStatusUpdated($table->id, $table->status));
         });
-
+        
         return response()->json([
             'status' => 'ok',
           ]);
@@ -251,6 +251,7 @@ class TablesController extends Controller
         // Delete the table (seats will cascade delete due to foreign key constraint)
         $table->delete();
         
-        return back()->with('success', 'Table deleted successfully!');
+        //return back()->with('success', 'Table deleted successfully!');
+        return redirect()->route('dashboard')->with('success', 'Table deleted successfully!');
     }
 }

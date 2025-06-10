@@ -8,10 +8,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TranslationController;
 use Inertia\Inertia;
 
+
 Route::middleware(['auth'])->group(function () {
-    Route::post('/tables/{table}/toggle-status', [TablesController::class, 'toggleStatus'])->name('tables.toggle-status');
-    Route::delete('/tables/{table}', [TablesController::class, 'destroy'])->name('tables.destroy');
+    Route::post('/tables/{table}/toggle-status', [TablesController::class, 'toggleStatus'])->name('api.tables.toggle-status');
+    Route::delete('/tables/{table}', [TablesController::class, 'destroy'])->name('api.tables.destroy');
 });
+
 
 // Seat management
 Route::post('/seats/{seat}/join', [SeatsController::class, 'join'])->name('seats.join');

@@ -14,7 +14,6 @@ require __DIR__.'/api.php';
 // Localized routes with Inertia
 Route::group(['prefix' => '{locale?}', 'where' => ['locale' => '[a-zA-Z]{2}']], function () {
     Route::get('/', [TablesController::class, 'index'])->name('home');
-    // Add other routes here
 
     Route::middleware(['auth'])->group(function () {
         // Dashboard
@@ -24,7 +23,8 @@ Route::group(['prefix' => '{locale?}', 'where' => ['locale' => '[a-zA-Z]{2}']], 
         Route::post('/tables', [TablesController::class, 'store'])->name('tables.store');
         Route::post('/tables/{table}/toggle-status', [TablesController::class, 'toggleStatus'])->name('tables.toggle-status');
         Route::delete('/tables/{table}', [TablesController::class, 'destroy'])->name('tables.destroy');
-    });
+        
+        });
 
     // Table view/join
     Route::get('/tables/{table}', [TablesController::class, 'show'])->name('tables.show');
