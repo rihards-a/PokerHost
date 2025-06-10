@@ -1,7 +1,7 @@
 <template>
     <AppLayout>
-        <div class="container mx-auto py-8 px-4"> <LanguageSwitcher />
-        <h1 class="text-3xl font-bold mb-6">Available Tables</h1>
+        <div class="container mx-auto py-8 px-4">
+        <h1 class="text-3xl font-bold mb-6">{{$t('Available Tables')}}</h1>
         
         <div v-if="tables.length === 0" class="text-center py-12">
             <p class="text-gray-600 text-xl">{{ $t('No open tables available at the moment.') }}</p>

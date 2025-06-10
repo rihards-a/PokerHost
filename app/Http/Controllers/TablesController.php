@@ -47,8 +47,14 @@ class TablesController extends Controller
     /**
      * Display the user's dashboard.
      */
-    public function dashboard()
+    public function dashboard($locale = 'en')
     {
+
+        // Set locale if provided
+        if (in_array($locale, ['en', 'lv'])) {
+            app()->setLocale($locale);
+        }
+
         $userId = Auth::id();
         
         // Get tables where the user is the host
@@ -91,6 +97,7 @@ class TablesController extends Controller
         return Inertia::render('Dashboard', [
             'myTables' => $myTables,
             'joinedTables' => $joinedTables,
+            'locale' => app()->getLocale(),
         ]);
     }
 

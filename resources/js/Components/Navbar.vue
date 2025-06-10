@@ -57,18 +57,42 @@
                 Register
               </Link>
             </template>
+              <LanguageSwitcher />
           </div>
+
         </div>
       </div>
     </nav>
   </template>
   
-  <script>
-  import { Link } from '@inertiajs/vue3';
-  
-  export default {
-    components: {
-      Link
-    }
-  }
-  </script>
+
+
+
+
+    <script>
+        import { Link } from '@inertiajs/vue3';
+        import { useI18n } from 'vue-i18n'
+        import LanguageSwitcher from '../Components/LanguageSwitcher.vue' // Adjust path as needed
+
+        export default {
+
+            components: {
+                LanguageSwitcher,
+                Link
+            },
+            props: {
+                tables: {
+                type: Array,
+                required: true
+        }
+            },
+            setup(props) {
+                const { t } = useI18n()
+
+
+                return {
+                    t,
+                }
+            }
+        }
+    </script>
