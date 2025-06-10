@@ -105,7 +105,13 @@ class TablesController extends Controller
      * Show the seats for a specific table.
      */
     #TODO load the current user player model too - to retrieve cards after reloading - also retrieve rounds from hand?
-    public function show(Table $table) {
+    public function show($locale = 'en', Table $table) {
+
+        // Set locale if provided
+        if (in_array($locale, ['en', 'lv'])) {
+            app()->setLocale($locale);
+        }
+
         // Ensure we load the host and seats relationships
         $table->load('host', 'seats');
         
@@ -172,6 +178,7 @@ class TablesController extends Controller
             'seats' => $seats,
             'currentUserSeat' => $currentUserSeat,
             'isHost' => Auth::check() && Auth::id() === $table->host_id,
+            'locale' => app()->getLocale(),
         ]);
     }
 

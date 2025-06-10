@@ -11,10 +11,11 @@ require __DIR__.'/api.php';
 
 // Route::get('/', [TablesController::class, 'index'])->name('home');
 
-
+/*
 // API routes for translations
 Route::get('/api/translations/{locale}', [TranslationController::class, 'getTranslations']);
 Route::get('/api/locales', [TranslationController::class, 'getAvailableLocales']);
+*/
 
 // Localized routes with Inertia
 Route::group(['prefix' => '{locale?}', 'where' => ['locale' => '[a-zA-Z]{2}']], function () {

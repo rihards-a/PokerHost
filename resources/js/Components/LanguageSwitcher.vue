@@ -4,7 +4,7 @@
         <select 
             v-model="currentLocale" 
             @change="changeLanguage"
-            class="px-3 py-2 border border-gray-300 rounded-md"
+            class="px-6 py-2 border border-gray-300 text-blue-500 rounded-md"
         >
             <option v-for="(name, code) in availableLocales" :key="code" :value="code">
                 {{ name }}

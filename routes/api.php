@@ -5,6 +5,8 @@ use App\Http\Controllers\SeatsController;
 use App\Http\Controllers\HandController;
 use App\Http\Controllers\ActionController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\TranslationController;
+use Inertia\Inertia;
 
 Route::middleware(['auth'])->group(function () {
     Route::post('/tables/{table}/toggle-status', [TablesController::class, 'toggleStatus'])->name('tables.toggle-status');
@@ -26,3 +28,7 @@ Route::post('/tables/{table}/hands/{hand}/actions', [ActionController::class, 'p
 Route::get('/tables/{table}/hands/{hand}/actions', [ActionController::class, 'getAvailableActions'])->name('tables.action.get');
 // for receiving player data
 Route::get('/tables/{table}/players/me', [ActionController::class, 'getOwnPlayerData']);
+
+// Routes for translations
+Route::get('/api/translations/{locale}', [TranslationController::class, 'getTranslations']);
+Route::get('/api/locales', [TranslationController::class, 'getAvailableLocales']);
