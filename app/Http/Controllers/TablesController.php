@@ -15,8 +15,13 @@ class TablesController extends Controller
     /**
      * Display a listing of open tables.
      */
-    public function index()
+    public function index(Request $request, $locale = 'en')
     {
+        // Set locale if provided
+        if (in_array($locale, ['en', 'lv'])) {
+            app()->setLocale($locale);
+        }
+
         $tables = Table::getOpenTables();
         
         // Transform the tables to include additional info
@@ -32,12 +37,13 @@ class TablesController extends Controller
                 'isFull' => $table->isFull(),
             ];
         });
-        
+
         return Inertia::render('Home', [
-            'tables' => $tables
+            'tables' => $tables,
+            'locale' => app()->getLocale(),
         ]);
     }
-    
+
     /**
      * Display the user's dashboard.
      */

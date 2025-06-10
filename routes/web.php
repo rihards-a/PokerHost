@@ -3,11 +3,28 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TablesController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\TranslationController;
+use Inertia\Inertia;
 
 require __DIR__.'/auth.php';
 require __DIR__.'/api.php';
 
-Route::get('/', [TablesController::class, 'index'])->name('home');
+// Route::get('/', [TablesController::class, 'index'])->name('home');
+
+
+// API routes for translations
+Route::get('/api/translations/{locale}', [TranslationController::class, 'getTranslations']);
+Route::get('/api/locales', [TranslationController::class, 'getAvailableLocales']);
+
+// Localized routes with Inertia
+Route::group(['prefix' => '{locale?}', 'where' => ['locale' => '[a-zA-Z]{2}']], function () {
+    Route::get('/', [TablesController::class, 'index'])->name('home');
+    Route::get('/about', function () {
+        return Inertia::render('About');
+    })->name('about');
+    // Add other routes here
+});
+
 
 Route::middleware(['auth'])->group(function () {
     // Dashboard
@@ -27,3 +44,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// Fallback route (redirect to default locale)
+Route::get('/{path}', function ($path) {
+    return redirect('/en/' . $path);
+})->where('path', '.*');

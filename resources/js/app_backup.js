@@ -1,12 +1,10 @@
-// resources/js/app.js
 import '../css/app.css';
 import './bootstrap';
+
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
-import i18n from './i18n';
-import translationService from './services/translationService';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -18,26 +16,14 @@ createInertiaApp({
             import.meta.glob('./Pages/**/*.vue'),
         ),
     setup({ el, App, props, plugin }) {
-        const app = createApp({ render: () => h(App, props) })
+        return createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(ZiggyVue)
-            .use(i18n);
-
-        // Make translation service globally available
-        app.config.globalProperties.$translationService = translationService;
-
-        // Load initial translations before mounting
-        const initialLocale = i18n.global.locale.value;
-        translationService.loadTranslations(initialLocale).then(() => {
-            app.mount(el);
-        }).catch(() => {
-            // Mount anyway if translations fail to load
-            app.mount(el);
-        });
-
-        return app;
+            .mount(el);
     },
     progress: {
         color: '#4B5563',
     },
 });
+
+
