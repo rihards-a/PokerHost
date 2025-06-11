@@ -15,13 +15,8 @@ class TablesController extends Controller
     /**
      * Display a listing of open tables.
      */
-    public function index(Request $request, $locale = 'en')
+    public function index()
     {
-        // Set locale if provided
-        if (in_array($locale, ['en', 'lv'])) {
-            app()->setLocale($locale);
-        }
-
         $tables = Table::getOpenTables();
         
         // Transform the tables to include additional info
@@ -37,24 +32,17 @@ class TablesController extends Controller
                 'isFull' => $table->isFull(),
             ];
         });
-
+        
         return Inertia::render('Home', [
-            'tables' => $tables,
-            'locale' => app()->getLocale(),
+            'tables' => $tables
         ]);
     }
-
+    
     /**
      * Display the user's dashboard.
      */
-    public function dashboard($locale = 'en')
+    public function dashboard()
     {
-
-        // Set locale if provided
-        if (in_array($locale, ['en', 'lv'])) {
-            app()->setLocale($locale);
-        }
-
         $userId = Auth::id();
         
         // Get tables where the user is the host
@@ -97,7 +85,6 @@ class TablesController extends Controller
         return Inertia::render('Dashboard', [
             'myTables' => $myTables,
             'joinedTables' => $joinedTables,
-            'locale' => app()->getLocale(),
         ]);
     }
 
@@ -105,13 +92,7 @@ class TablesController extends Controller
      * Show the seats for a specific table.
      */
     #TODO load the current user player model too - to retrieve cards after reloading - also retrieve rounds from hand?
-    public function show($locale = 'en', Table $table) {
-
-        // Set locale if provided
-        if (in_array($locale, ['en', 'lv'])) {
-            app()->setLocale($locale);
-        }
-
+    public function show(Table $table) {
         // Ensure we load the host and seats relationships
         $table->load('host', 'seats');
         
@@ -178,7 +159,6 @@ class TablesController extends Controller
             'seats' => $seats,
             'currentUserSeat' => $currentUserSeat,
             'isHost' => Auth::check() && Auth::id() === $table->host_id,
-            'locale' => app()->getLocale(),
         ]);
     }
 
@@ -198,7 +178,7 @@ class TablesController extends Controller
         
             broadcast(new TableStatusUpdated($table->id, $table->status));
         });
-        
+
         return response()->json([
             'status' => 'ok',
           ]);
@@ -207,14 +187,8 @@ class TablesController extends Controller
     /**
      * Store a newly created table in storage.
      */
-    public function store($locale = 'en', Request $request)
+    public function store(Request $request)
     {
-
-        // Set locale if provided
-        if (in_array($locale, ['en', 'lv'])) {
-            app()->setLocale($locale);
-        }
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'max_seats' => 'required|integer|min:2|max:12',
@@ -235,7 +209,7 @@ class TablesController extends Controller
             ]);
         }
         
-        return redirect()->route('dashboard', ['locale' => $locale])->with('success', 'Table created successfully!');
+        return redirect()->route('dashboard')->with('success', 'Table created successfully!');
     }
 
     /**
@@ -251,7 +225,6 @@ class TablesController extends Controller
         // Delete the table (seats will cascade delete due to foreign key constraint)
         $table->delete();
         
-        //return back()->with('success', 'Table deleted successfully!');
-        return redirect()->route('dashboard')->with('success', 'Table deleted successfully!');
+        return back()->with('success', 'Table deleted successfully!');
     }
 }

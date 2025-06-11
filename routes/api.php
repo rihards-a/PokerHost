@@ -10,10 +10,9 @@ use Inertia\Inertia;
 
 
 Route::middleware(['auth'])->group(function () {
-    Route::post('/tables/{table}/toggle-status', [TablesController::class, 'toggleStatus'])->name('api.tables.toggle-status');
-    Route::delete('/tables/{table}', [TablesController::class, 'destroy'])->name('api.tables.destroy');
+    Route::post('/tables/{table}/toggle-status', [TablesController::class, 'toggleStatus'])->name('tables.toggle-status');
+    Route::delete('/tables/{table}', [TablesController::class, 'destroy'])->name('tables.destroy');
 });
-
 
 // Seat management
 Route::post('/seats/{seat}/join', [SeatsController::class, 'join'])->name('seats.join');
@@ -30,7 +29,3 @@ Route::post('/tables/{table}/hands/{hand}/actions', [ActionController::class, 'p
 Route::get('/tables/{table}/hands/{hand}/actions', [ActionController::class, 'getAvailableActions'])->name('tables.action.get');
 // for receiving player data
 Route::get('/tables/{table}/players/me', [ActionController::class, 'getOwnPlayerData']);
-
-// Routes for translations
-Route::get('/api/translations/{locale}', [TranslationController::class, 'getTranslations']);
-Route::get('/api/locales', [TranslationController::class, 'getAvailableLocales']);

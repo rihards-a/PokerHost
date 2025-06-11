@@ -39,7 +39,7 @@ class HandService
         // Deal cards to the table. Determine dealer, small blind, and big blind
         $hand = Hand::create([
             'table_id' => $table->id,
-            'community_cards' => json_encode(["Kh", "Kd", "Ks", "Jc", "9h"]), #TODO create a deck and shuffle - make sure users cannot see this or deal it incrementally
+            'community_cards' => json_encode(["Ah", "Kd", "Qs", "Jc", "9h"]), #TODO create a deck and shuffle - make sure users cannot see this or deal it incrementally
             'dealer_id' => $dealerId,
             'small_blind_id' => $smallBlindId,
             'big_blind_id' => $bigBlindId, #TODO edge case if only 2 players
@@ -53,8 +53,8 @@ class HandService
                 'status' => 'active',
                 'hand_id' => $hand->id,
                 'seat_id' => $seat->id,
-                'card1' => '9s', #TODO create a deck and shuffle - make sure users cannot see this or deal it incrementally
-                'card2' => '3h', #TODO create a deck and shuffle - make sure users cannot see this or deal it incrementally
+                'card1' => 'As', #TODO create a deck and shuffle - make sure users cannot see this or deal it incrementally
+                'card2' => 'Ks', #TODO create a deck and shuffle - make sure users cannot see this or deal it incrementally
             ]);
         }
 

@@ -1,30 +1,24 @@
-<script setup>
-import { usePreferredLocale } from '@/composables/usePreferredLocale'
-
-const { getLocalizedRoute } = usePreferredLocale()
-</script>
-
 <template>
     <nav class="bg-gray-800 text-white shadow-md">
       <div class="container mx-auto px-4">
         <div class="flex justify-between items-center py-4">
           <!-- Logo/Site Name -->
           <div>
-            <Link :href="getLocalizedRoute('/')" class="text-xl font-bold hover:text-blue-300 transition">
+            <Link href="/" class="text-xl font-bold hover:text-blue-300 transition">
               Poker Tables
             </Link>
           </div>
           
           <!-- Navigation Links -->
           <div class="flex items-center space-x-6">
-            <Link :href="getLocalizedRoute('/')" class="hover:text-blue-300 transition">
+            <Link href="/" class="hover:text-blue-300 transition">
               Home
             </Link>
             
             <!-- Auth Links -->
             <template v-if="$page.props.auth.user">
               <Link 
-                :href="getLocalizedRoute('/dashboard')" 
+                href="/dashboard" 
                 class="hover:text-blue-300 transition"
                 :class="{ 'text-blue-300': $page.component.startsWith('Dashboard') }"
               >
@@ -37,18 +31,14 @@ const { getLocalizedRoute } = usePreferredLocale()
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <!-- Remove the gap by using top-full instead of mt-2 -->
-                <div class="absolute right-0 top-full w-48 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                  <Link 
-                    :href="getLocalizedRoute('/profile')" 
-                    class="block px-4 py-2 text-gray-800 hover:bg-gray-100"
-                  >
+                <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden group-hover:block">
+                  <Link href="/profile" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">
                     Profile
                   </Link>
-                  <Link
-                    href="/logout"
-                    method="post"
-                    as="button"
+                  <Link 
+                    href="/logout" 
+                    method="post" 
+                    as="button" 
                     class="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
                   >
                     Logout
@@ -67,42 +57,18 @@ const { getLocalizedRoute } = usePreferredLocale()
                 Register
               </Link>
             </template>
-              <LanguageSwitcher />
           </div>
-
         </div>
       </div>
     </nav>
   </template>
   
-
-
-
-
-    <script>
-        import { Link } from '@inertiajs/vue3';
-        import { useI18n } from 'vue-i18n'
-        import LanguageSwitcher from '../Components/LanguageSwitcher.vue' // Adjust path as needed
-
-        export default {
-
-            components: {
-                LanguageSwitcher,
-                Link
-            },
-            props: {
-                tables: {
-                type: Array,
-                required: true
-        }
-            },
-            setup(props) {
-                const { t } = useI18n()
-
-
-                return {
-                    t,
-                }
-            }
-        }
-    </script>
+  <script>
+  import { Link } from '@inertiajs/vue3';
+  
+  export default {
+    components: {
+      Link
+    }
+  }
+  </script>

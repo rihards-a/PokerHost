@@ -1,10 +1,10 @@
 <template>
     <AppLayout>
         <div class="container mx-auto py-8 px-4">
-        <h1 class="text-3xl font-bold mb-6">{{$t('Available Tables')}}</h1>
+        <h1 class="text-3xl font-bold mb-6">Available Tables</h1>
         
         <div v-if="tables.length === 0" class="text-center py-12">
-            <p class="text-gray-600 text-xl">{{ $t('No open tables available at the moment.') }}</p>
+            <p class="text-gray-600 text-xl">No open tables available at the moment.</p>
             <p class="text-gray-500 mt-2">Why not create one?</p>
         </div>
         
@@ -63,32 +63,20 @@
     </AppLayout>
   </template>
   
-    <script>
-        import { Link } from '@inertiajs/vue3';
-        import AppLayout from '@/Layouts/AppLayout.vue';
-        import { useI18n } from 'vue-i18n'
-        import LanguageSwitcher from '../Components/LanguageSwitcher.vue' // Adjust path as needed
-
-        export default {
-
-            components: {
-                LanguageSwitcher,
-                AppLayout,
-                Link
-            },
-            props: {
-                tables: {
-                type: Array,
-                required: true
-        }
-            },
-            setup(props) {
-                const { t } = useI18n()
-
-
-                return {
-                    t,
-                }
-            }
-        }
-    </script>
+  <script>
+  import { Link } from '@inertiajs/vue3';
+  import AppLayout from '@/Layouts/AppLayout.vue';
+  
+  export default {
+    components: {
+      AppLayout,
+      Link
+    },
+    props: {
+      tables: {
+        type: Array,
+        required: true
+      }
+    }
+  }
+  </script>
