@@ -576,7 +576,6 @@
       },
 
       handleStateUpdate(data) {
-        this.addLog(`Receiving table state...`);
         try {
             this.currentHand = data.hand;
             this.currentRound = data.round;
@@ -587,7 +586,6 @@
             this.lastAction = data.last_action || null;
             // Update seats with current turn data
             this.handleTurnChange(data.current_seat?.id);
-          this.addLog(`Table state received successfully`);
         } catch (error) {
             console.error("Error setting table state:", error);
         }
