@@ -26,38 +26,58 @@ class HandService
     * @param Collection $occupiedSeats
     * @return Hand
     */
-    public function initializeHand(Table $table, Collection $occupiedSeats) 
+    public function initializeHand(Table $table, Collection $occupiedSeats)
     {
-        /* TODO
         // Create deck and shuffle
-        $deck = $this->createShuffledDeck();
-        */
-
-        // Incrementing dealer offset based off of table hand count - only for the first hand
+        $deck = $this->deckService->createDeck();
+        
+        // Calculate dealer, small blind, big blind
         list($dealerId, $smallBlindId, $bigBlindId) = $this->calculateDealerSBBB($table, $occupiedSeats);
-
-        // Deal cards to the table. Determine dealer, small blind, and big blind
+        
+        // Deal 2 cards to each player first
+        $playerCards = [];
+        $playerCount = $occupiedSeats->count();
+        
+        // Deal 2 rounds of cards (one card to each player, then second card to each player)
+        for ($round = 0; $round < 2; $round++) {
+            foreach ($occupiedSeats as $index => $seat) {
+                $dealResult = $this->deckService->dealCards($deck, 1);
+                $deck = $dealResult['remaining_deck']; // Update deck after each deal
+                
+                if (!isset($playerCards[$seat->id])) {
+                    $playerCards[$seat->id] = [];
+                }
+                $playerCards[$seat->id][] = $dealResult['dealt_cards'][0];
+            }
+        }
+        
+        // Deal community cards - FIX: Extract just the dealt cards and update deck
+        $communityCardsResult = $this->deckService->dealCards($deck, 5);
+        $deck = $communityCardsResult['remaining_deck']; // Update deck (though not needed after this)
+        $communityCards = $communityCardsResult['dealt_cards']; // Only store the actual 5 community cards
+            
+        // Create the hand record
         $hand = Hand::create([
             'table_id' => $table->id,
-            'community_cards' => json_encode(["Ah", "Kd", "Qs", "Jc", "9h"]), #TODO create a deck and shuffle - make sure users cannot see this or deal it incrementally
+            'community_cards' => json_encode($communityCards),
             'dealer_id' => $dealerId,
             'small_blind_id' => $smallBlindId,
-            'big_blind_id' => $bigBlindId, #TODO edge case if only 2 players
+            'big_blind_id' => $bigBlindId,
             'is_complete' => false,
             'pot_size' => 0,
         ]);
-
-        // Deal cards to each player
+        
+        // Create seat hand records for each player
         foreach ($occupiedSeats as $seat) {
             SeatHand::create([
                 'status' => 'active',
                 'hand_id' => $hand->id,
                 'seat_id' => $seat->id,
-                'card1' => 'As', #TODO create a deck and shuffle - make sure users cannot see this or deal it incrementally
-                'card2' => 'Ks', #TODO create a deck and shuffle - make sure users cannot see this or deal it incrementally
+                'card1' => $playerCards[$seat->id][0],
+                'card2' => $playerCards[$seat->id][1],
             ]);
         }
-
+        
         return $hand;
     }
 

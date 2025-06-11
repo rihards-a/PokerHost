@@ -371,10 +371,12 @@
           this.addLog(`Table status changed to: ${data.status}`);
           this.table.status = data.status;
         })
+        /*
         .catch(error => {
           console.error('Error toggling table status:', error);
           this.addLog('Error toggling table status: ' + error.message);
         });
+        */
       },
   
       // Get current player information
@@ -745,8 +747,8 @@
 }
 
 .seat {
-  width: 4rem;
-  height: 4rem;
+  width: 6rem;
+  height: 6rem;
   position: absolute;
   transform: translate(-50%, -50%);
   border: 2px solid #e5e7eb;

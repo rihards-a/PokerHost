@@ -178,10 +178,11 @@ class TablesController extends Controller
         
             broadcast(new TableStatusUpdated($table->id, $table->status));
         });
-
+        /*
         return response()->json([
             'status' => 'ok',
           ]);
+          */
     }
 
     /**
