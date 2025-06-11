@@ -95,10 +95,8 @@ class ActionController extends Controller
                 $hand->refresh();
                 if ($hand->is_complete) {
                     broadcast(new HandFinished($table->id, $hand->id, $winners));
-                } else {
-                    if ($roundFinished) {\Log::debug('round advanced... ', [$roundFinished->type, json_decode($hand->community_cards)]);}
-                    broadcast(new TableStateChanged($table->id, $this->pokerStateService->getTableState($table)));
-                }
+                } else if ($roundFinished) {\Log::debug('round advanced... ', [$roundFinished->type, json_decode($hand->community_cards)]);}
+                broadcast(new TableStateChanged($table->id, $this->pokerStateService->getTableState($table)));
             });
        
             return response()->json(['status' => 'success']);
