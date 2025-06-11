@@ -15,7 +15,7 @@
           <p><strong>Hand #{{ currentHand.id }}</strong></p>
           <p v-if="community.length > 0"><strong>Community Cards:</strong> {{ community.join(' ') }}</p>
           <p><strong>Pot:</strong> ${{ currentPot }}</p>
-          <p v-if="currentRound"><strong>Round:</strong> {{ currentRound }}</p>
+          <p v-if="currentRound" class="capitalize"><strong>Round:</strong> {{ (currentRound.type) }}</p>
         </div>
   
         <!-- Your cards -->
@@ -44,10 +44,10 @@
             <div v-if="seat.isOccupied" class="text-center">
               <p class="text-sm font-bold">{{ seat.userName }}</p>
               <p v-if="seatActions[seat.id]" class="text-xs">
-                <span v-if="seatActions[seat.id].type">action: {{ seatActions[seat.id].type }}</span>
-                <span v-if="seatActions[seat.id].amount"> ${{ seatActions[seat.id].amount }}</span>
-                <span v-if="seatActions[seat.id].stack !== undefined"> stack: {{ seatActions[seat.id].stack }}$</span>
-                <span v-if="seatActions[seat.id].status"> status: {{ seatActions[seat.id].status }}</span>
+                <span v-if="seatActions[seat.id].type" class="capitalize"> {{ seatActions[seat.id].type }}</span>
+                <span v-if="seatActions[seat.id].amount"> ${{ seatActions[seat.id].amount }} </span> <br>
+                <span v-if="seatActions[seat.id].stack !== undefined" class="text-base"> {{ seatActions[seat.id].stack }}$</span>
+                <!--<span v-if="seatActions[seat.id].status"> status: {{ seatActions[seat.id].status }}</span>-->
               </p>
             </div>
             <button 
@@ -742,7 +742,7 @@
   
   <style scoped>
 .poker-table-container {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
