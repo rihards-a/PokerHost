@@ -2,24 +2,20 @@
 
 namespace App\Services;
 
-#TODO: currently not in use!!!
-class DeckService
+class DeckService 
 {
     /**
      * Create a shuffled deck of cards
      */
-    public function createDeck()
+    public function createDeck() 
     {
-        $suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+        $suits = ['h', 'd', 'c', 's'];
         $ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-        
         $deck = [];
+        
         foreach ($suits as $suit) {
             foreach ($ranks as $rank) {
-                $deck[] = [
-                    'suit' => $suit,
-                    'rank' => $rank
-                ];
+                $deck[] = $rank . $suit;
             }
         }
         
@@ -27,6 +23,19 @@ class DeckService
         shuffle($deck);
         
         return $deck;
+    }
+    
+    /**
+     * Deal cards from the deck
+     * Returns array of dealt cards and remaining deck
+     */
+    public function dealCards($deck, $count) 
+    {
+        $dealtCards = array_splice($deck, 0, $count);
+        return [
+            'dealt_cards' => $dealtCards,
+            'remaining_deck' => $deck
+        ];
     }
     
     /**

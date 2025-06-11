@@ -39,7 +39,7 @@ class TablesController extends Controller
     }
     
     /**
-     * Display the user's dashboard.
+     * Display the user's dashboard and tables.
      */
     public function dashboard()
     {
