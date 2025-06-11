@@ -180,7 +180,11 @@ class ActionController extends Controller
 
         $currentSeatHand = $seat->seatHand()->latest()->with(['hand'])->first();
 
-        $cards_dealt = $currentSeatHand?->hand->rounds()->exists();
+        $cards_dealt = false;
+        if (!$currentSeatHand?->hand->is_complete) {
+            $cards_dealt = $currentSeatHand?->hand->rounds()->exists();
+        }
+
         $card1 = $cards_dealt ? $currentSeatHand->card1 : null;
         $card2 = $cards_dealt ? $currentSeatHand->card2 : null;       
 
@@ -188,7 +192,7 @@ class ActionController extends Controller
         return response()->json([
             'player' => [
                 'active'        => $player->active,
-                'balance'       => $player->balance ? $player->balance : 0,
+                'stack'         => $player->balance ? $player->balance : 0,
                 'name'          => $guestSessionId ? $player->guest_name : Auth::user()->name,
                 'id'            => $player->id,
             ],
