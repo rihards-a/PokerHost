@@ -16,6 +16,7 @@ Route::middleware(['auth'])->group(function () {
     // Table management
     Route::post('/tables', [TablesController::class, 'store'])->name('tables.store');
     Route::post('/tables/{table}/toggle-status', [TablesController::class, 'toggleStatus'])->name('tables.toggle-status');
+    Route::put('/tables/{table}', [TablesController::class, 'update'])->name('tables.update');
     Route::delete('/tables/{table}', [TablesController::class, 'destroy'])->name('tables.destroy');
 });
 

@@ -214,6 +214,83 @@ class TablesController extends Controller
     }
 
     /**
+    * Show the form for editing the specified table.
+    */
+    public function edit(Table $table)
+    {
+        // Ensure the user is the host of this table
+        if (Auth::id() !== $table->host_id) {
+            return back()->with('error', 'You are not authorized to edit this table.');
+        }
+
+        return view('tables.edit', compact('table'));
+    }
+
+    /**
+     * Update the specified table in storage.
+     */
+    public function update(Request $request, Table $table)
+    {
+    // Ensure the user is the host of this table
+    if (Auth::id() !== $table->host_id) {
+        return back()->with('error', 'You are not authorized to update this table.');
+    }
+
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'max_seats' => 'required|integer|min:2|max:12',
+        'game-type' => 'required|in:TexasHoldem',
+    ]);
+
+    DB::transaction(function () use ($table, $validated) {
+        $oldMaxSeats = $table->max_seats;
+        $newMaxSeats = $validated['max_seats'];
+
+        // Update the table
+        $table->update($validated);
+
+        // Handle seat adjustments if max_seats changed
+        if ($oldMaxSeats !== $newMaxSeats) {
+            if ($newMaxSeats > $oldMaxSeats) {
+                // Add new seats
+                for ($i = $oldMaxSeats + 1; $i <= $newMaxSeats; $i++) {
+                    Seat::create([
+                        'position' => $i,
+                        'table_id' => $table->id,
+                    ]);
+                }
+            } else {
+                // Remove excess seats (only if they're empty)
+                $excessSeats = Seat::where('table_id', $table->id)
+                    ->where('position', '>', $newMaxSeats)
+                    ->get();
+
+                foreach ($excessSeats as $seat) {
+                    // Only delete if seat is not occupied
+                    if (!$seat->user_id) {
+                        $seat->delete();
+                    } else {
+                        // If seats are occupied, prevent the update
+                        throw new \Exception('Cannot reduce table size while seats are occupied.');
+                    }
+                }
+            }
+        }
+
+    });
+
+    // Return JSON
+    if ($request->expectsJson()) {
+        return response()->json([
+            'message' => 'Table updated successfully!',
+            'table' => $table->fresh()
+        ]);
+    }
+
+    return redirect()->route('dashboard')->with('success', 'Table updated successfully!');
+    }
+
+    /**
      * Delete a table.
      */
     public function destroy(Table $table)

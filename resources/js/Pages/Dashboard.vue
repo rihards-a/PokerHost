@@ -65,10 +65,18 @@
                         as="button"
                         class="text-yellow-600 hover:text-yellow-900"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
                       </Link>
+                      <button 
+                          @click="openEditModal(table)" 
+                          class="text-blue-600 hover:text-blue-900"
+                      >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 3.487a2.121 2.121 0 113 3L10.5 15.75H7.5v-3L16.862 3.487zM19.5 21h-15a1.5 1.5 0 01-1.5-1.5v-15A1.5 1.5 0 014.5 3h9a.75.75 0 010 1.5h-9a.75.75 0 00-.75.75v15c0 .414.336.75.75.75h15a.75.75 0 00.75-.75v-9a.75.75 0 011.5 0v9A2.25 2.25 0 0119.5 21z" />
+                          </svg>
+                      </button>
                       <Link 
                         :href="`/tables/${table.id}`" 
                         method="delete" 
@@ -196,6 +204,82 @@
           </div>
         </div>
       </div>
+
+            <!-- Edit Table Modal -->
+      <div v-if="showEditTableModal" class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+          <div class="flex items-center justify-center min-h-screen px-4">
+              <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" @click="showEditTableModal = false"></div>
+              <div class="bg-white rounded-lg max-w-md w-full mx-auto shadow-xl z-10 p-6">
+                  <div class="flex justify-between items-center mb-4">
+                      <h3 class="text-lg font-medium">Edit Table</h3>
+                      <button @click="showEditTableModal = false" class="text-gray-500 hover:text-gray-700">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                      </button>
+                  </div>
+                  <form @submit.prevent="updateTable">
+                      <div class="mb-4">
+                          <label for="editName" class="block text-sm font-medium text-gray-700 mb-2">Table Name</label>
+                          <input
+                              id="editName"
+                              v-model="editTableForm.name"
+                              type="text"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              required
+                          />
+                          <p v-if="editErrors.name" class="mt-1 text-sm text-red-600">{{ editErrors.name }}</p>
+                      </div>
+                      <div class="mb-4">
+                          <label for="editMaxSeats" class="block text-sm font-medium text-gray-700 mb-2">Maximum Seats</label>
+                          <select
+                              id="editMaxSeats"
+                              v-model="editTableForm.max_seats"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              required
+                          >
+                              <option value="2">2 Players</option>
+                              <option value="6">6 Players</option>
+                              <option value="9">9 Players</option>
+                              <option value="10">10 Players</option>
+                          </select>
+                          <p v-if="editErrors.max_seats" class="mt-1 text-sm text-red-600">{{ editErrors.max_seats }}</p>
+                          <p v-if="selectedTable && selectedTable.occupied_seats > editTableForm.max_seats" class="mt-1 text-sm text-yellow-600">
+                              Warning: {{ selectedTable.occupied_seats }} seats are currently occupied. Cannot reduce below this number.
+                          </p>
+                      </div>
+                      <div class="mb-4">
+                          <label for="editGameType" class="block text-sm font-medium text-gray-700 mb-2">Game Type</label>
+                          <select
+                              id="editGameType"
+                              v-model="editTableForm.game_type"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              required
+                          >
+                              <option value="TexasHoldem">Texas Hold'em</option>
+                          </select>
+                          <p v-if="editErrors.game_type" class="mt-1 text-sm text-red-600">{{ editErrors.game_type }}</p>
+                      </div>
+                      <div class="flex justify-end mt-6 space-x-3">
+                          <button
+                              type="button"
+                              @click="showEditTableModal = false"
+                              class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                          >
+                              Cancel
+                          </button>
+                          <button
+                              type="submit"
+                              class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                              :disabled="editProcessing || (selectedTable && selectedTable.occupied_seats > editTableForm.max_seats)"
+                          >
+                              {{ editProcessing ? 'Updating...' : 'Update Table' }}
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      </div>
     </AppLayout>
   </template>
   
@@ -224,7 +308,16 @@
       return {
         showCreateTableModal: false,
         showDeleteModal: false,
-        tableToDelete: null
+        tableToDelete: null,
+        showEditTableModal: false,
+        editProcessing: false,
+        selectedTable: null,
+        editTableForm: {
+            name: '',
+            max_seats: 6,
+            'game-type': 'TexasHoldem'
+        },
+        editErrors: {}
       };
     },
     
@@ -273,6 +366,70 @@
             this.showDeleteModal = false;
           }
         });
+      }, 
+    openEditModal(table) {
+        this.selectedTable = table;
+        this.editTableForm = {
+            name: table.name,
+            max_seats: table.max_seats,
+            'game-type': table['game-type'] || table.game_type || 'TexasHoldem'
+        };
+        this.editErrors = {};
+        this.showEditTableModal = true;
+    },
+    
+    async updateTable() {
+        this.editProcessing = true;
+        this.editErrors = {};
+        
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (!csrfToken) {
+                throw new Error('CSRF token not found');
+            }
+            
+            const response = await fetch(`/tables/${this.selectedTable.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken.getAttribute('content'),
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(this.editTableForm)
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                if (errorData.errors) {
+                    this.editErrors = errorData.errors;
+                } else {
+                    throw new Error(errorData.message || 'Failed to update table');
+                }
+                return;
+            }
+            
+            const data = await response.json();
+            
+            this.showEditTableModal = false;
+            this.showSuccessMessage('Table updated successfully!');
+            
+            // Refresh the page to show updated data
+            window.location.reload();
+            
+        } catch (error) {
+            console.error('Error updating table:', error);
+            this.showErrorMessage(error.message || 'An error occurred while updating the table');
+        } finally {
+            this.editProcessing = false;
+        }
+    },
+        showSuccessMessage(message) {
+          console.log('Success:', message);
+      },
+    
+      showErrorMessage(message) {
+        console.error('Error:', message);
       }
     }
   }
