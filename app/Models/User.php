@@ -56,4 +56,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(Table::class);
     }
+
+    // Role helper methods
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isUser()
+    {
+        return $this->role === 'user';
+    }
+
+    public function hasRole($role)
+    {
+        return $this->role === $role;
+    }
 }

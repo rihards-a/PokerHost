@@ -20,6 +20,7 @@ class Table extends Model
     public static function getOpenTables()
     {
         return self::where('status', 'open')
+            ->orderBy('created_at', 'desc')
             ->with(['host', 'seats'])
             ->get();
     }
