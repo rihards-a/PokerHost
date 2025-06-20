@@ -1,34 +1,34 @@
 <template>
   <AppLayout>
     <div class="container mx-auto p-4">
-      <h1 class="text-2xl font-bold mb-4">Poker Table: {{ table.name }}</h1>
+      <h1 class="text-2xl font-bold mb-4">{{ $page.props.translations.show.poker_table_title }} {{ table.name }}</h1>
       
       <div class="poker-table-container p-4">
         <div class="mb-4 p-2 bg-gray-100 rounded">
-          <p><strong>Game Type:</strong> {{ table.gameType }}</p>
-          <p><strong>Host:</strong> {{ table.hostName }}</p>
-          <p><strong>Status:</strong> {{ table.status }}</p>
-          <p><strong>Created:</strong> {{ table.created }}</p>
+          <p><strong>{{ $page.props.translations.show.game_type }}</strong> {{ table.gameType }}</p>
+          <p><strong>{{ $page.props.translations.show.host }}</strong> {{ table.hostName }}</p>
+          <p><strong>{{ $page.props.translations.show.status }}</strong> {{ table.status }}</p>
+          <p><strong>{{ $page.props.translations.show.created }}</strong> {{ table.created }}</p>
         </div>
   
         <!-- Hand information -->
         <div v-if="currentHand" class="mb-4 p-2 bg-blue-100 rounded">
-          <p><strong>Hand #{{ currentHand.id }}</strong></p>
-          <p v-if="community.length > 0"><strong>Community Cards:</strong> {{ community.join(' ') }}</p>
-          <p><strong>Pot:</strong> ${{ currentPot }}</p>
-          <p v-if="currentRound" class="capitalize"><strong>Round:</strong> {{ (currentRound.type) }}</p>
+          <p><strong>{{ $page.props.translations.show.hand_number }}{{ currentHand.id }}</strong></p>
+          <p v-if="community.length > 0"><strong>{{ $page.props.translations.show.community_cards }}</strong> {{ community.join(' ') }}</p>
+          <p><strong>{{ $page.props.translations.show.pot }}</strong> ${{ currentPot }}</p>
+          <p v-if="currentRound" class="capitalize"><strong>{{ $page.props.translations.show.round }}</strong> {{ (currentRound.type) }}</p>
         </div>
   
         <!-- Your cards -->
         <div v-if="playerCards.length > 0" class="mb-4 p-2 bg-green-100 rounded">
-          <h2 class="font-bold">Your Cards</h2>
+          <h2 class="font-bold">{{ $page.props.translations.show.your_cards }}</h2>
           <p>{{ playerCards.join(' ') }}</p>
         </div>
   
         <!-- Table display -->
         <div class="poker-table relative bg-green-700 rounded-full h-64 w-full mb-6 flex items-center justify-center">
           <div v-if="currentDealer" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white font-bold bg-blue-800 p-1 rounded">
-            Dealer
+            {{ $page.props.translations.show.dealer }}
           </div>
           
           <!-- Seats around the table -->
@@ -56,7 +56,7 @@
               @click="joinSeat(seat.id)"
               class="text-xs bg-blue-500 text-white p-1 rounded hover:bg-blue-600"
             >
-              Join
+              {{ $page.props.translations.show.join }}
             </button>
           </div>
         </div>
@@ -68,7 +68,7 @@
             @click="leaveSeat()"
             class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
           >
-            Leave Seat
+            {{ $page.props.translations.show.leave_seat }}
           </button>
           
           <button 
@@ -76,7 +76,7 @@
             @click="startHand()"
             class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
           >
-            Start Hand
+            {{ $page.props.translations.show.start_hand }}
           </button>
   
           <button 
@@ -84,13 +84,13 @@
               @click="toggleTableStatus"
               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 transition"
             >
-              {{ table.status === 'open' ? 'Close Table' : 'Open Table' }}
+              {{ table.status === 'open' ? $page.props.translations.show.close_table : $page.props.translations.show.open_table }}
             </button>
         </div>
   
         <!-- Action buttons -->
         <div v-if="isPlayerTurn && table.status === 'closed'" class="mb-4 p-2 bg-yellow-100 rounded">
-          <h2 class="font-bold mb-2">Your Turn</h2>
+          <h2 class="font-bold mb-2">{{ $page.props.translations.show.your_turn }}</h2>
           
           <!-- Standard action buttons -->
           <div class="flex space-x-2 mb-3">
@@ -100,7 +100,7 @@
               :class="availableActions.includes('fold') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
               :disabled="!availableActions.includes('fold')"
             >
-              Fold
+              {{ $page.props.translations.show.fold }}
             </button>
             
             <button
@@ -109,7 +109,7 @@
               :class="availableActions.includes('check') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
               :disabled="!availableActions.includes('check')"
             >
-              Check
+              {{ $page.props.translations.show.check }}
             </button>
             
             <button
@@ -118,7 +118,7 @@
               :class="availableActions.includes('call') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
               :disabled="!availableActions.includes('call')"
             >
-              Call
+              {{ $page.props.translations.show.call }}
             </button>
             
             <button
@@ -127,7 +127,7 @@
               :class="availableActions.includes('allin') ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
               :disabled="!availableActions.includes('allin')"
             >
-              All In
+              {{ $page.props.translations.show.all_in }}
             </button>
           </div>
   
@@ -135,7 +135,7 @@
           <div v-if="availableActions.includes('bet') || availableActions.includes('raise')" class="flex items-center space-x-3">
             <div class="flex-1">
               <label class="block text-sm font-medium text-gray-700 mb-1">
-                {{ availableActions.includes('bet') ? 'Bet Amount' : 'Raise Amount' }}
+                {{ availableActions.includes('bet') ? $page.props.translations.show.bet_amount : $page.props.translations.show.raise_amount }}
               </label>
               
               <!-- Slider for amount -->
@@ -156,26 +156,26 @@
                   :max="currentPlayer?.balance || 0" 
                   class="px-2 py-1 border rounded w-24 text-right" 
                 />
-                <span class="ml-2">chips</span>
+                <span class="ml-2">{{ $page.props.translations.show.chips }}</span>
                 <!-- Quick bet buttons -->
                 <div class="flex space-x-2 mt-2">
                   <button 
                     @click="betAmount = calculatePotPercentage(0.5)" 
                     class="px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
                   >
-                    1/2 Pot
+                    {{ $page.props.translations.show.half_pot }}
                   </button>
                   <button 
                     @click="betAmount = calculatePotPercentage(0.75)" 
                     class="px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
                   >
-                    3/4 Pot
+                    {{ $page.props.translations.show.three_quarters_pot }}
                   </button>
                   <button 
                     @click="betAmount = calculatePotPercentage(1)" 
                     class="px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
                   >
-                    Pot
+                    {{ $page.props.translations.show.pot_button }}
                   </button>
                 </div>
               </div>
@@ -187,14 +187,14 @@
               @click="takeAction(availableActions.includes('bet') ? 'bet' : 'raise', betAmount)"
               class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
             >
-              {{ availableActions.includes('bet') ? 'Bet' : 'Raise' }}
+              {{ availableActions.includes('bet') ? $page.props.translations.show.bet : $page.props.translations.show.raise }}
             </button>
           </div>
         </div>
   
         <!-- Game log -->
         <div class="mt-4">
-          <h2 class="font-bold mb-2">Game Log</h2>
+          <h2 class="font-bold mb-2">{{ $page.props.translations.show.game_log }}</h2>
           <div class="bg-gray-100 p-2 rounded h-32 overflow-y-auto">
             <p v-for="(log, index) in gameLogs" :key="index" class="text-sm">
               {{ log }}
@@ -264,7 +264,7 @@
     
     mounted() {
       this.connectToPusher();
-      this.addLog('Welcome to the poker table!');
+      this.addLog(this.$page.props.translations.show.welcome_message);
       
       this.fetchTableState();
   
@@ -341,7 +341,7 @@
       },
   
       async fetchTableState() {
-        this.addLog(`Fetching table state...`);
+        this.addLog(this.$page.props.translations.show.fetching_table_state);
         try {
             const tableId = this.table.id;
             const response = await axios.get(`/tables/${tableId}/state`);
@@ -356,7 +356,7 @@
             this.lastAction = data.last_action || null;
             // Update seats with current turn data
             this.handleTurnChange(data.current_seat?.id);
-          this.addLog(`Table state fetched successfully`);
+            this.addLog(this.$page.props.translations.show.table_state_fetched);
         } catch (error) {
             console.error("Error fetching table state:", error);
         }
@@ -375,15 +375,9 @@
           return response.json();
         })
         .then(data => {
-          this.addLog(`Table status changed to: ${data.status}`);
+          this.addLog(`${this.$page.props.translations.show.table_status_changed} ${data.status}`);
           this.table.status = data.status;
         })
-        /*
-        .catch(error => {
-          console.error('Error toggling table status:', error);
-          this.addLog('Error toggling table status: ' + error.message);
-        });
-        */
       },
   
       // Get current player information
@@ -406,7 +400,7 @@
         
         if (!(!cards || !cards.card1 || !cards.card2)) {
           this.playerCards = [cards.card1, cards.card2];
-          this.addLog(`You received: ${this.playerCards}`);
+          this.addLog(`${this.$page.props.translations.show.you_received_cards} ${this.playerCards}`);
         }
         
         this.getAvailableActions(); // attempt to get available actions
@@ -430,7 +424,7 @@
           return response.json();
         })
         .then(data => {
-          this.addLog('You joined seat #' + seatId);
+          this.addLog(`${this.$page.props.translations.show.joined_seat}${seatId}`);
           // After joining, reconnect to Pusher to get private channel
           this.userCurrentSeat = { id: seatId };
           this.connectToPusher();
@@ -438,7 +432,7 @@
         })
         .catch(error => {
           console.error('Error joining seat:', error);
-          this.addLog('Error joining seat: ' + error.message);
+          this.addLog(`${this.$page.props.translations.show.error_joining_seat} ${error.message}`);
         });
       },
       
@@ -457,7 +451,7 @@
           return response.json();
         })
         .then(data => {
-          this.addLog('You left your seat');
+          this.addLog(this.$page.props.translations.show.left_seat);
           // Clean up private channel subscription
           if (this.secret) {
             this.pusher.unsubscribe('table.' + this.table.id + '.seat.' + this.userCurrentSeat.id);
@@ -471,7 +465,7 @@
         })
         .catch(error => {
           console.error('Error leaving seat:', error);
-          this.addLog('Error leaving seat: ' + error.message);
+          this.addLog(`${this.$page.props.translations.show.error_leaving_seat} ${error.message}`);
         });
       },
       
@@ -488,11 +482,11 @@
           return response.json();
         })
         .then(data => {
-          this.addLog('Starting new hand...');
+          this.addLog(this.$page.props.translations.show.starting_new_hand);
         })
         .catch(error => {
           console.error('Error starting hand:', error);
-          this.addLog('Error starting hand: ' + error.message);
+          this.addLog(`${this.$page.props.translations.show.error_starting_hand} ${error.message}`);
         });
       },
       
@@ -526,7 +520,7 @@
         })
         .catch(error => {
           console.error('Error getting available actions:', error);
-          this.addLog('Error getting available actions: ' + error.message);
+          this.addLog(`${this.$page.props.translations.show.error_getting_actions} ${error.message}`);
         });
       },
       
@@ -554,13 +548,13 @@
           })
         )
         .then(data => {
-          this.addLog(`You ${actionType}${amount > 0 ? ' $' + amount : ''}`);
+          this.addLog(`${this.$page.props.translations.show.you_action} ${actionType}${amount > 0 ? ' $' + amount : ''}`);
           this.isPlayerTurn = false;
           this.availableActions = [];
         })
         .catch(error => {
           console.error('Error taking action:', error);
-          this.addLog('Error taking action: ' + error.message);
+          this.addLog(`${this.$page.props.translations.show.error_taking_action} ${error.message}`);
         });
       },
       
@@ -571,7 +565,7 @@
           this.seats[seatIndex] = { ...this.seats[seatIndex], ...seatData };
           
           const action = seatData.isOccupied ? 'joined' : 'left';
-          this.addLog(`${seatData.userName || 'A player'} ${action} seat #${seatData.position}`);
+          this.addLog(`${seatData.userName || this.$page.props.translations.show.a_player} ${action} ${this.$page.props.translations.show.player_action_seat}${seatData.position}`);
         }
       },
 
@@ -593,7 +587,7 @@
       
       handleStatusUpdate(status) {
         this.table.status = status;
-        this.addLog(`Table status changed to: ${status}`);
+        this.addLog(`${this.$page.props.translations.show.table_status_changed} ${data.status}`);
       },
       
       handleTurnChange(seatId) {
@@ -602,11 +596,11 @@
         if (this.userCurrentSeat && this.userCurrentSeat.id === seatId) {
           this.isPlayerTurn = true;
           this.getAvailableActions();
-          this.addLog('It\'s your turn!');
+          this.addLog(this.$page.props.translations.show.its_your_turn);
         } else {
           const seat = this.seats.find(s => s.id === seatId);
           if (seat) {
-            this.addLog(`It's ${seat.userName}'s turn`);
+            this.addLog(this.$page.props.translations.show.its_player_turn.replace(':player', seat.userName));
           }
           this.isPlayerTurn = false;
           this.availableActions = [];
@@ -633,19 +627,19 @@
         if (cards) {
           switch (roundType) {
             case 'preflop':
-              this.addLog('Preflop round started');
+            this.addLog(this.$page.props.translations.show.preflop_started);
               break;
             case 'flop':
               this.community = cards.slice(0, 3);
-              this.addLog(`Flop: ${this.community.join(' ')}`);
+              this.addLog(`${this.$page.props.translations.show.flop} ${this.community.join(' ')}`);
               break;
             case 'turn':
               this.community.push(cards[0]);
-              this.addLog(`Turn: ${cards[0]}`);
+              this.addLog(`${this.$page.props.translations.show.turn} ${cards[0]}`);
               break;
             case 'river':
               this.community.push(cards[0]);
-              this.addLog(`River: ${cards[0]}`);
+              this.addLog(`${this.$page.props.translations.show.river} ${cards[0]}`);
               break;
           }
         }
@@ -669,8 +663,8 @@
         this.isPlayerTurn = false;
         this.availableActions = [];
         
-        this.addLog(`Hand #${handId} started - Dealer seat #${data.dealer}`);
-        this.addLog(`Small blind: seat #${data.small_blind}, Big blind: seat #${data.big_blind}`);
+        this.addLog(`${this.$page.props.translations.show.hand_started_dealer.replace(':hand_id', handId).replace(':dealer_seat', data.dealer)}`);
+        this.addLog(`${this.$page.props.translations.show.blinds_info.replace(':small_blind', data.small_blind).replace(':big_blind', data.big_blind)}`);
         
         // Update player info after hand starts
         if (this.userCurrentSeat) {
@@ -679,12 +673,12 @@
       },
       
       handleHandFinished(handId, winners) {
-        this.addLog(`Hand #${handId} finished`);
+        this.addLog(`${this.$page.props.translations.show.hand_finished.replace(':hand_id', handId)}`);
         
         winners.forEach(winner => {
           const seat = this.seats.find(s => s.id === winner.seat_id);
           if (seat) {
-            this.addLog(`${seat.userName} won $${winner.amount}`);
+            this.addLog(`${this.$page.props.translations.show.player_won.replace(':player', seat.userName).replace(':amount', winner.amount)}`);
           }
         });
         
@@ -709,7 +703,7 @@
         // Only process if the cards are for the current user
         if (this.userCurrentSeat && this.userCurrentSeat.id === seatId) {
           this.playerCards = [cards.card1, cards.card2];
-          this.addLog(`You received: ${cards.card1} ${cards.card2}`);
+          this.addLog(`${this.$page.props.translations.show.you_received_cards} ${cards.card1} ${cards.card2}`);
         }
       },
       

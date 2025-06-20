@@ -2,7 +2,7 @@
     <AppLayout>
       <div class="container mx-auto px-4 py-8">
         <div class="flex justify-between items-center mb-8">
-          <h1 class="text-3xl font-bold">Dashboard</h1>
+          <h1 class="text-3xl font-bold">{{ $page.props.translations.dashboard.title }}</h1>
           <button
             @click="showCreateTableModal = true"
             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center"
@@ -10,34 +10,34 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            Create Table
+            {{ $page.props.translations.dashboard.create_table }}
           </button>
         </div>
   
         <!-- User's Tables Section -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 class="text-xl font-semibold mb-4">My Tables</h2>
+          <h2 class="text-xl font-semibold mb-4">{{ $page.props.translations.dashboard.my_tables }}</h2>
           
           <div v-if="myTables.length === 0" class="text-gray-500 text-center py-6">
-            <p>You haven't created any tables yet.</p>
+            <p>{{ $page.props.translations.dashboard.no_tables_created }}</p>
           </div>
           
           <div v-else class="overflow-x-auto">
             <table class="min-w-full bg-white">
               <thead>
                 <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
-                  <th class="py-3 px-6 text-left">Name</th>
-                  <th class="py-3 px-6 text-center">Game Type</th>
-                  <th class="py-3 px-6 text-center">Players</th>
-                  <th class="py-3 px-6 text-center">Status</th>
-                  <th class="py-3 px-6 text-center">Created</th>
-                  <th class="py-3 px-6 text-center">Actions</th>
+                  <th class="py-3 px-6 text-left">{{ $page.props.translations.dashboard.table_name }}</th>
+                  <th class="py-3 px-6 text-center">{{ $page.props.translations.dashboard.game_type }}</th>
+                  <th class="py-3 px-6 text-center">{{ $page.props.translations.dashboard.players }}</th>
+                  <th class="py-3 px-6 text-center">{{ $page.props.translations.dashboard.status }}</th>
+                  <th class="py-3 px-6 text-center">{{ $page.props.translations.dashboard.created }}</th>
+                  <th class="py-3 px-6 text-center">{{ $page.props.translations.dashboard.actions }}</th>
                 </tr>
               </thead>
               <tbody class="text-gray-600 text-sm">
                 <tr v-for="table in myTables" :key="table.id" class="border-b border-gray-200 hover:bg-gray-50">
                   <td class="py-3 px-6 text-left">{{ table.name }}</td>
-                  <td class="py-3 px-6 text-center">{{ table.gameType }}</td>
+                  <td class="py-3 px-6 text-center">{{ translateGameType(table.gameType) }}</td>
                   <td class="py-3 px-6 text-center">{{ table.occupiedSeats }} / {{ table.maxSeats }}</td>
                   <td class="py-3 px-6 text-center">
                     <span
@@ -47,7 +47,7 @@
                       }"
                       class="py-1 px-3 rounded-full text-xs"
                     >
-                      {{ table.status }}
+                      {{ translateStatus(table.status) }}
                     </span>
                   </td>
                   <td class="py-3 px-6 text-center">{{ table.created }}</td>
@@ -98,10 +98,10 @@
         
         <!-- Tables You've Joined Section -->
         <div class="bg-white rounded-lg shadow-md p-6">
-          <h2 class="text-xl font-semibold mb-4">Tables You've Joined</h2>
+          <h2 class="text-xl font-semibold mb-4">{{ $page.props.translations.dashboard.tables_joined }}</h2>
           
           <div v-if="joinedTables.length === 0" class="text-gray-500 text-center py-6">
-            <p>You haven't joined any tables yet.</p>
+            <p>{{ $page.props.translations.dashboard.no_tables_joined }}</p>
           </div>
           
           <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -111,14 +111,14 @@
               </div>
               <div class="p-4">
                 <div class="flex justify-between items-center text-sm mb-2">
-                  <span>Host: {{ table.hostName }}</span>
+                  <span>{{ $page.props.translations.dashboard.host }}: {{ table.hostName }}</span>
                   <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
                     {{ table.gameType }}
                   </span>
                 </div>
                 <div class="mt-4 flex justify-end">
                   <Link :href="`/tables/${table.id}`" class="bg-blue-600 text-white hover:bg-blue-700 px-3 py-1 rounded text-sm">
-                    Return to Table
+                    {{ $page.props.translations.dashboard.return_to_table }}
                   </Link>
                 </div>
               </div>
@@ -134,7 +134,7 @@
           
           <div class="bg-white rounded-lg max-w-md w-full mx-auto shadow-xl z-10 p-6">
             <div class="flex justify-between items-center mb-4">
-              <h3 class="text-lg font-medium">Create New Table</h3>
+              <h3 class="text-lg font-medium">{{ $page.props.translations.dashboard.create_new_table }}</h3>
               <button @click="showCreateTableModal = false" class="text-gray-500 hover:text-gray-700">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -144,7 +144,7 @@
             
             <form @submit.prevent="createTable">
               <div class="mb-4">
-                <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Table Name</label>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-2">{{ $page.props.translations.dashboard.table_name_label }}</label>
                 <input
                   id="name"
                   v-model="tableForm.name"
@@ -156,30 +156,30 @@
               </div>
               
               <div class="mb-4">
-                <label for="maxSeats" class="block text-sm font-medium text-gray-700 mb-2">Maximum Seats</label>
+                <label for="maxSeats" class="block text-sm font-medium text-gray-700 mb-2">{{ $page.props.translations.dashboard.maximum_seats }}</label>
                 <select
                   id="maxSeats"
                   v-model="tableForm.max_seats"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
-                  <option value="2">2 Players</option>
-                  <option value="6">6 Players</option>
-                  <option value="9">9 Players</option>
-                  <option value="10">10 Players</option>
+                  <option value="2">{{ $page.props.translations.dashboard.players_count.replace(':count', '2') }}</option>
+                  <option value="6">{{ $page.props.translations.dashboard.players_count.replace(':count', '6') }}</option>
+                  <option value="9">{{ $page.props.translations.dashboard.players_count.replace(':count', '9') }}</option>
+                  <option value="10">{{ $page.props.translations.dashboard.players_count.replace(':count', '10') }}</option>
                 </select>
                 <p v-if="errors.max_seats" class="mt-1 text-sm text-red-600">{{ errors.max_seats }}</p>
               </div>
               
               <div class="mb-4">
-                <label for="gameType" class="block text-sm font-medium text-gray-700 mb-2">Game Type</label>
+                <label for="gameType" class="block text-sm font-medium text-gray-700 mb-2">{{ $page.props.translations.dashboard.game_type_label }}</label>
                 <select
                   id="gameType"
                   v-model="tableForm['game-type']"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
-                  <option value="TexasHoldem">Texas Hold'em</option>
+                  <option value="TexasHoldem">{{ $page.props.translations.dashboard.texas_holdem }}</option>
                 </select>
                 <p v-if="errors['game-type']" class="mt-1 text-sm text-red-600">{{ errors['game-type'] }}</p>
               </div>
@@ -190,14 +190,14 @@
                   @click="showCreateTableModal = false"
                   class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
                 >
-                  Cancel
+                  {{ $page.props.translations.dashboard.cancel }}
                 </button>
                 <button
                   type="submit"
                   class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
                   :disabled="processing"
                 >
-                  {{ processing ? 'Creating...' : 'Create Table' }}
+                {{ processing ? $page.props.translations.dashboard.creating : $page.props.translations.dashboard.create }}
                 </button>
               </div>
             </form>
@@ -211,7 +211,7 @@
               <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" @click="showEditTableModal = false"></div>
               <div class="bg-white rounded-lg max-w-md w-full mx-auto shadow-xl z-10 p-6">
                   <div class="flex justify-between items-center mb-4">
-                      <h3 class="text-lg font-medium">Edit Table</h3>
+                      <h3 class="text-lg font-medium">{{ $page.props.translations.dashboard.edit_table }}</h3>
                       <button @click="showEditTableModal = false" class="text-gray-500 hover:text-gray-700">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -220,7 +220,7 @@
                   </div>
                   <form @submit.prevent="updateTable">
                       <div class="mb-4">
-                          <label for="editName" class="block text-sm font-medium text-gray-700 mb-2">Table Name</label>
+                          <label for="editName" class="block text-sm font-medium text-gray-700 mb-2">{{ $page.props.translations.dashboard.table_name_label }}</label>
                           <input
                               id="editName"
                               v-model="editTableForm.name"
@@ -231,32 +231,32 @@
                           <p v-if="editErrors.name" class="mt-1 text-sm text-red-600">{{ editErrors.name }}</p>
                       </div>
                       <div class="mb-4">
-                          <label for="editMaxSeats" class="block text-sm font-medium text-gray-700 mb-2">Maximum Seats</label>
+                          <label for="editMaxSeats" class="block text-sm font-medium text-gray-700 mb-2">{{ $page.props.translations.dashboard.maximum_seats }}</label>
                           <select
                               id="editMaxSeats"
                               v-model="editTableForm.max_seats"
                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               required
                           >
-                              <option value="2">2 Players</option>
-                              <option value="6">6 Players</option>
-                              <option value="9">9 Players</option>
-                              <option value="10">10 Players</option>
+                              <option value="2">{{ $page.props.translations.dashboard.players_count.replace(':count', '2') }}</option>
+                              <option value="6">{{ $page.props.translations.dashboard.players_count.replace(':count', '6') }}</option>
+                              <option value="9">{{ $page.props.translations.dashboard.players_count.replace(':count', '9') }}</option>
+                              <option value="10">{{ $page.props.translations.dashboard.players_count.replace(':count', '10') }}</option>
                           </select>
                           <p v-if="editErrors.max_seats" class="mt-1 text-sm text-red-600">{{ editErrors.max_seats }}</p>
                           <p v-if="selectedTable && selectedTable.occupied_seats > editTableForm.max_seats" class="mt-1 text-sm text-yellow-600">
-                              Warning: {{ selectedTable.occupied_seats }} seats are currently occupied. Cannot reduce below this number.
+                            {{ $page.props.translations.dashboard.seats_occupied_warning.replace(':count', selectedTable.occupied_seats) }}
                           </p>
                       </div>
                       <div class="mb-4">
-                          <label for="editGameType" class="block text-sm font-medium text-gray-700 mb-2">Game Type</label>
+                          <label for="editGameType" class="block text-sm font-medium text-gray-700 mb-2">{{ $page.props.translations.dashboard.game_type_label }}</label>
                           <select
                               id="editGameType"
                               v-model="editTableForm.game_type"
                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               required
                           >
-                              <option value="TexasHoldem">Texas Hold'em</option>
+                              <option value="TexasHoldem">{{ $page.props.translations.dashboard.texas_holdem }}</option>
                           </select>
                           <p v-if="editErrors.game_type" class="mt-1 text-sm text-red-600">{{ editErrors.game_type }}</p>
                       </div>
@@ -266,14 +266,14 @@
                               @click="showEditTableModal = false"
                               class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
                           >
-                              Cancel
+                            {{ $page.props.translations.dashboard.cancel }}
                           </button>
                           <button
                               type="submit"
                               class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
                               :disabled="editProcessing || (selectedTable && selectedTable.occupied_seats > editTableForm.max_seats)"
                           >
-                              {{ editProcessing ? 'Updating...' : 'Update Table' }}
+                            {{ editProcessing ? $page.props.translations.dashboard.updating : $page.props.translations.dashboard.update }}
                           </button>
                       </div>
                   </form>
@@ -338,6 +338,17 @@
     },
     
     methods: {
+      translateStatus(status) {
+          return this.$page.props.translations.dashboard[status] || status;
+      },
+      
+      translateGameType(gameType) {
+          if (gameType === 'TexasHoldem') {
+              return this.$page.props.translations.dashboard.texas_holdem;
+          }
+          return gameType;
+      },
+
       createTable() {
         this.tableForm.post('/tables', {
           onSuccess: () => {
