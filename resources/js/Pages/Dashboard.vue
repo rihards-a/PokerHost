@@ -2,8 +2,8 @@
     <AppLayout>
       <div class="container mx-auto px-4 py-8">
         <div class="flex justify-between items-center mb-8">
-          <h1 v-if="!isAdmin" class="text-3xl font-bold">Dashboard</h1>
-          <h1 v-if="isAdmin" class="text-3xl font-bold text-red-700">Admin Dashboard</h1>
+          <h1 v-if="!isAdmin" class="text-3xl font-bold">{{ $page.props.translations.dashboard.title }}</h1>
+          <h1 v-if="isAdmin" class="text-3xl font-bold text-red-700">{{ $page.props.translations.dashboard.admin_title }}</h1>
           <button
             v-if="!isAdmin"
             @click="showCreateTableModal = true"
@@ -18,8 +18,8 @@
   
         <!-- User's Tables Section -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 v-if="!isAdmin" class="text-xl font-semibold mb-4">My Tables</h2>
-          <h2 v-if="isAdmin" class="text-xl font-semibold mb-4 text-red-700">All Tables</h2>
+          <h2 v-if="!isAdmin" class="text-xl font-semibold mb-4">{{ $page.props.translations.dashboard.my_tables }}</h2>
+          <h2 v-if="isAdmin" class="text-xl font-semibold mb-4 text-red-700">{{ $page.props.translations.dashboard.all_tables }}</h2>
           
           <div v-if="myTables.length === 0" class="text-gray-500 text-center py-6">
             <p>{{ $page.props.translations.dashboard.no_tables_created }}</p>

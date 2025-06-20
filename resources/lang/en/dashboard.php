@@ -1,8 +1,10 @@
 <?php
 return [
     'title' => 'Dashboard',
+    'admin_title' => 'Admin Dashboard',
     'create_table' => 'Create Table',
     'my_tables' => 'My Tables',
+    'all_tables' => 'All Tables',
     'no_tables_created' => "You haven't created any tables yet.",
     'tables_joined' => "Tables You've Joined",
     'no_tables_joined' => "You haven't joined any tables yet.",

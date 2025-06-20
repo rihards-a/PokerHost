@@ -1,8 +1,10 @@
 <?php
 return [
     'title' => 'Vadības panelis',
+    'admin_title' => 'Administratora panelis',
     'create_table' => 'Izveidot galdu',
     'my_tables' => 'Mani galdi',
+    'all_tables' => 'Visi galdi',
     'no_tables_created' => 'Jūs vēl neesat izveidojis nevienu galdu.',
     'tables_joined' => 'Galdi, kuros esat pievienojies',
     'no_tables_joined' => 'Jūs vēl neesat pievienojies nevienam galdam.',
