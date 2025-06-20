@@ -43,11 +43,42 @@ class TablesController extends Controller
      */
     public function dashboard()
     {
+        $user = Auth::user();
+
+        if (!$user) {
+            return redirect()->route('login'); // or abort(403);
+        }
+
+        // If the user is admin, show all tables
+        if ($user->isAdmin()) {
+            $allTables = Table::with('host', 'seats')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($table) {
+                    return [
+                        'id' => $table->id,
+                        'name' => $table->name,
+                        'gameType' => $table['game-type'],
+                        'maxSeats' => $table->max_seats,
+                        'occupiedSeats' => $table->occupiedSeats->count(),
+                        'status' => $table->status,
+                        'created' => $table->created_at->diffForHumans(),
+                    ];
+                });
+
+            return Inertia::render('Dashboard', [
+                'myTables' => $allTables,
+                'joinedTables' => [],
+                'isAdmin' => true,
+            ]);
+        }
+
         $userId = Auth::id();
         
         // Get tables where the user is the host
         $myTables = Table::where('host_id', $userId)
             ->with('host', 'seats')
+            ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($table) {
                 return [
@@ -85,13 +116,13 @@ class TablesController extends Controller
         return Inertia::render('Dashboard', [
             'myTables' => $myTables,
             'joinedTables' => $joinedTables,
+            'isAdmin' => false,
         ]);
     }
 
     /**
      * Show the seats for a specific table.
      */
-    #TODO load the current user player model too - to retrieve cards after reloading - also retrieve rounds from hand?
     public function show(Table $table) {
         // Ensure we load the host and seats relationships
         $table->load('host', 'seats');
@@ -168,7 +199,7 @@ class TablesController extends Controller
     public function toggleStatus(Table $table)
     {
         // Ensure the user is the host of this table
-        if (Auth::id() !== $table->host_id) {
+        if (Auth::id() !== $table->host_id && Auth::user()->role !== 'admin') {
             return back()->with('error', 'You are not authorized to modify this table.');
         }
         
@@ -219,7 +250,7 @@ class TablesController extends Controller
     public function edit(Table $table)
     {
         // Ensure the user is the host of this table
-        if (Auth::id() !== $table->host_id) {
+        if (Auth::id() !== $table->host_id && Auth::user()->role !== 'admin') {
             return back()->with('error', 'You are not authorized to edit this table.');
         }
 
@@ -231,63 +262,63 @@ class TablesController extends Controller
      */
     public function update(Request $request, Table $table)
     {
-    // Ensure the user is the host of this table
-    if (Auth::id() !== $table->host_id) {
-        return back()->with('error', 'You are not authorized to update this table.');
-    }
+        // Ensure the user is the host of this table
+        if (Auth::id() !== $table->host_id && Auth::user()->role !== 'admin') {
+            return back()->with('error', 'You are not authorized to update this table.');
+        }
 
-    $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'max_seats' => 'required|integer|min:2|max:12',
-        'game-type' => 'required|in:TexasHoldem',
-    ]);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'max_seats' => 'required|integer|min:2|max:12',
+            'game-type' => 'required|in:TexasHoldem',
+        ]);
 
-    DB::transaction(function () use ($table, $validated) {
-        $oldMaxSeats = $table->max_seats;
-        $newMaxSeats = $validated['max_seats'];
+        DB::transaction(function () use ($table, $validated) {
+            $oldMaxSeats = $table->max_seats;
+            $newMaxSeats = $validated['max_seats'];
 
-        // Update the table
-        $table->update($validated);
+            // Update the table
+            $table->update($validated);
 
-        // Handle seat adjustments if max_seats changed
-        if ($oldMaxSeats !== $newMaxSeats) {
-            if ($newMaxSeats > $oldMaxSeats) {
-                // Add new seats
-                for ($i = $oldMaxSeats + 1; $i <= $newMaxSeats; $i++) {
-                    Seat::create([
-                        'position' => $i,
-                        'table_id' => $table->id,
-                    ]);
-                }
-            } else {
-                // Remove excess seats (only if they're empty)
-                $excessSeats = Seat::where('table_id', $table->id)
-                    ->where('position', '>', $newMaxSeats)
-                    ->get();
+            // Handle seat adjustments if max_seats changed
+            if ($oldMaxSeats !== $newMaxSeats) {
+                if ($newMaxSeats > $oldMaxSeats) {
+                    // Add new seats
+                    for ($i = $oldMaxSeats + 1; $i <= $newMaxSeats; $i++) {
+                        Seat::create([
+                            'position' => $i,
+                            'table_id' => $table->id,
+                        ]);
+                    }
+                } else {
+                    // Remove excess seats (only if they're empty)
+                    $excessSeats = Seat::where('table_id', $table->id)
+                        ->where('position', '>', $newMaxSeats)
+                        ->get();
 
-                foreach ($excessSeats as $seat) {
-                    // Only delete if seat is not occupied
-                    if (!$seat->user_id) {
-                        $seat->delete();
-                    } else {
-                        // If seats are occupied, prevent the update
-                        throw new \Exception('Cannot reduce table size while seats are occupied.');
+                    foreach ($excessSeats as $seat) {
+                        // Only delete if seat is not occupied
+                        if (!$seat->user_id) {
+                            $seat->delete();
+                        } else {
+                            // If seats are occupied, prevent the update
+                            throw new \Exception('Cannot reduce table size while seats are occupied.');
+                        }
                     }
                 }
             }
+
+        });
+
+        // Return JSON
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Table updated successfully!',
+                'table' => $table->fresh()
+            ]);
         }
 
-    });
-
-    // Return JSON
-    if ($request->expectsJson()) {
-        return response()->json([
-            'message' => 'Table updated successfully!',
-            'table' => $table->fresh()
-        ]);
-    }
-
-    return redirect()->route('dashboard')->with('success', 'Table updated successfully!');
+        return redirect()->route('dashboard')->with('success', 'Table updated successfully!');
     }
 
     /**
@@ -296,7 +327,7 @@ class TablesController extends Controller
     public function destroy(Table $table)
     {
         // Ensure the user is the host of this table
-        if (Auth::id() !== $table->host_id) {
+        if (Auth::id() !== $table->host_id && Auth::user()->role !== 'admin') {
             return back()->with('error', 'You are not authorized to delete this table.');
         }
         

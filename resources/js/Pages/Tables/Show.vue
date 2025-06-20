@@ -143,7 +143,7 @@
                 type="range" 
                 v-model.number="betAmount" 
                 :min="minBetAmount" 
-                :max="currentPlayer?.balance || 0" 
+                :max="currentPlayer?.stack || 0" 
                 class="w-full"
               />
               
@@ -153,7 +153,7 @@
                   type="number" 
                   v-model.number="betAmount" 
                   :min="minBetAmount" 
-                  :max="currentPlayer?.balance || 0" 
+                  :max="currentPlayer?.stack || 0" 
                   class="px-2 py-1 border rounded w-24 text-right" 
                 />
                 <span class="ml-2">{{ $page.props.translations.show.chips }}</span>
@@ -242,7 +242,7 @@
         seatActions: {},
         gameLogs: [],
         userCurrentSeat: this.currentUserSeat, // Initialize from prop
-        currentPlayer: null // Will store the current player object with balance
+        currentPlayer: null // Will store the current player object with stack
       };
     },
     
@@ -256,7 +256,7 @@
         return (percentage) => {
           return Math.min(
             Math.floor(this.currentPot * percentage), 
-            this.currentPlayer?.balance || 0
+            this.currentPlayer?.stack || 0
           );
         };
       }
@@ -396,7 +396,7 @@
       .then(data => {
         this.currentPlayer = data.player;
         const cards = data.cards;
-        this.betAmount = Math.min(this.minBetAmount, this.currentPlayer.balance);
+        this.betAmount = Math.min(this.minBetAmount, this.currentPlayer.stack);
         
         if (!(!cards || !cards.card1 || !cards.card2)) {
           this.playerCards = [cards.card1, cards.card2];
@@ -515,7 +515,7 @@
           
           // Initialize bet amount based on available actions
           if (this.availableActions.includes('bet') || this.availableActions.includes('raise')) {
-            this.betAmount = Math.min(this.minBetAmount, this.currentPlayer?.balance || 0);
+            this.betAmount = Math.min(this.minBetAmount, this.currentPlayer?.stack || 0);
           }
         })
         .catch(error => {
