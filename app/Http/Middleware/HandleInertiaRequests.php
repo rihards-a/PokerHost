@@ -50,6 +50,7 @@ class HandleInertiaRequests extends Middleware
                     'home' => __('home'),
                     'footer' => __('footer'),
                     'show' => __('show'),
+                    'profile' => __('profile'),
                 ];
             },
         ];
